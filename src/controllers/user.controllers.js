@@ -1,4 +1,6 @@
+import { use } from "react";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { ApiError } from "../utils/ApiError.js";
 
 const registerUser = asyncHandler(async(req, res) =>{
     // get user details from request body 
@@ -15,6 +17,13 @@ const registerUser = asyncHandler(async(req, res) =>{
  const {username, fullname, email, password}  = req.body 
         console.log("email:", email);
     
+        if(
+            [username, fullname, email, password].some((fields)=> fields?.trim() === ""
+            )
+
+        ){
+            
+        }
 
 
 })
