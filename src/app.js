@@ -22,7 +22,7 @@ import userRoutes from './routes/user.routes.js';
 
 app.use("/api/v1/user", userRoutes)
 
-//   http://localhost:3000/api/v1/user/register
+  // http://localhost:3000/api/v1/user/register
 
 
 
