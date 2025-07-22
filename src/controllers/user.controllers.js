@@ -3,8 +3,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadCloudinary } from "../utils/cloudinary.js";
-import { UploadApiResponse } from "../utils/ApiResponse.js";
-
+import { ApiResponse } from "../utils/ApiResponse.js";
 const registerUser = asyncHandler(async(req, res) =>{
     // get user details from request body 
     // validation are - empty
@@ -18,16 +17,15 @@ const registerUser = asyncHandler(async(req, res) =>{
 
 
  const {username, fullname, email, password}  = req.body 
-        console.log("Request body:", req.body);
     
         if(
-            [username, fullname, email, password].some((fields)=> fields?.trim() === "")
+            [username, fullname, email, password].some((field)=> field?.trim() === "")
         ){
           throw  new ApiError(400, "All fields are required")
         }
 
-      const existedUser =  user.findOne({
-            $or: ({username}, {email})
+      const existedUser = await User.findOne({
+            $or: [{username}, {email}]
         })
         
 
@@ -38,13 +36,22 @@ const registerUser = asyncHandler(async(req, res) =>{
        const avatarLocalPath = req.files?.avatar[0]?.path
        const  coverImageLocalPath = req.files?.coverImage[0]?.path
 
-       if(!avatarPath){
+       console.log("📁 Avatar local path:", avatarLocalPath);
+       console.log("📁 Cover image local path:", coverImageLocalPath);
+       console.log("📂 req.files:", req.files);
+
+       if(!avatarLocalPath){
         throw new ApiError(400, "Avatar is required")
        }
         // console.log("Uploaded files", avatarPath);
         
+       console.log("🚀 Starting avatar upload...");
        const avatar=  await uploadCloudinary(avatarLocalPath)
+       console.log("✅ Avatar upload result:", avatar);
+       
+       console.log("🚀 Starting cover image upload...");
        const coverImage = await uploadCloudinary(coverImageLocalPath)
+       console.log("✅ Cover image upload result:", coverImage);
 
        if(!avatar){
          throw new ApiError(400, "Avatar upload failed")
@@ -67,7 +74,7 @@ const registerUser = asyncHandler(async(req, res) =>{
       throw new ApiError(500, "somthing went worng while regeistering user")
      }
        return res.status(201).json(
-          new  UploadApiResponse(201, createdUser, "user created  successfully")
+          new  ApiResponse(201, createdUser, "user created  successfully")
         )
 })
 

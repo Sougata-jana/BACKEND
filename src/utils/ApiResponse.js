@@ -7,4 +7,4 @@ class ApiResponse {
     }
 }
 
-export { UploadApiResponse };
+export { ApiResponse };
