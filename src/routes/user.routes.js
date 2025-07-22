@@ -1,4 +1,3 @@
-import { decrypt } from "dotenv";
 import { Router } from "express";
 import { registerUser } from "../controllers/user.controllers.js";
 import { upload } from "../middlewares/multer.middewares.js";
