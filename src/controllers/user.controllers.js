@@ -146,6 +146,10 @@ const loginUser = asyncHandler(async(req, res)=>{
     "User Logged in Successfully"
   )
 })
+const logoutUser  = asyncHandler(async(req, res)=>{
+
+})
 export {registerUser,
-  loginUser
+  loginUser,
+  logoutUser
 }
