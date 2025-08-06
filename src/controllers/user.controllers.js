@@ -3,6 +3,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { uploadCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import jwt from "jsonwebtoken";
 import { useId } from "react";
 
 const generatingRefreshAndAccessToken = async(userid)=>{
@@ -147,7 +148,40 @@ const loginUser = asyncHandler(async(req, res)=>{
   )
 })
 const logoutUser  = asyncHandler(async(req, res)=>{
+   await User.findByIdAndUpdate(
+    req.user._id,
+    {
+      $set:{
+        refreshToken: undefined
+      }
+    },
+    {
+      new: true
+    }
+    
+  )
+  const option = {
+    http: true,
+    secure:true
+  }
+  return res
+  .status(200)
+  .clearCookie("accessToken", option)
+  .clearCookie("refreshToken", option)
+  .json (new ApiResponse(200, null, "User logged out successfully"))
 
+})
+const refreshAccessToken = asyncHandler(async(req, res)=>{
+  const incomingrefreshToken = req.cookies.refreshToken || req.body.refreshToken
+  if(!incomingrefreshToken){
+    throw new ApiError(401, "Unauthorized, no refresh token provided")
+  }
+  const decodedToken =  jwt.verify(incomingrefreshToken, process.env.REFRESH_TOKEN_SECRET)
+
+  const user = await User.findById(decodedToken._id)
+  if(!user){
+    throw new ApiError(404, "invalid refresh token")
+  }
 })
 export {registerUser,
   loginUser,
