@@ -6,11 +6,11 @@ subscriber:{
     ref:"User",
     required:true
 },
-chanel:{
-    trype:Schema.Types.ObjectId, // the channel being subscribed to
+channel:{
+    type:Schema.Types.ObjectId, // the channel being subscribed to
     ref:"User",
     required:true
 }
 },{Timestamps:true})
 
-export const subscription = mongoose.model("subscription", subscriptionSchema)
+export const Subscription = mongoose.model("Subscription", subscriptionSchema)
