@@ -1,7 +1,7 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
-import { uploadCloudinary, updateAvatarCloudinary } from "../utils/cloudinary.js";
+import { uploadCloudinary,  } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import { useId } from "react";
@@ -308,7 +308,7 @@ const updateUserCoverImage = asyncHandler(async(req, res)=>
   .json(new ApiResponse(200, user, "User cover image updated successfully"))
 })
 
-const getUserChanelProfile = asyncHandler(async(req, res)=>{
+const getUserChannelProfile = asyncHandler(async(req, res)=>{
 const {username} = req.params
 if(!username?.trim()){
  throw new ApiError(400, "username is missing")
@@ -340,13 +340,29 @@ const channel = await User.aggregate([
       subscribersCount:{
         $size:"$subscribers"
       },
-      subscribeToCount:{
-        
+      channelSubscribeToCount:{
         $size:"$subscribeTo"
       }
+    },
+    $isSubscribed:{
+      $if:{$in:[req.user?._id, "$subscribers.subscriber"]},
+      then:true,
+      else:false
+    }
+  },
+  {
+    $project:{
+      fullname: 1,
+      username:1,
+      avatar:1,
+      coverImage:1,
+      subscribersCount:1,
+      channelSubscribeToCount:1,
+      $isSubscribed:1
     }
   }
 ])
+console.log("Channel profile data:", channel);
 
 })
 export {
@@ -358,5 +374,6 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
-  updateUserCoverImage
+  updateUserCoverImage,
+  getUserChannelProfile
 }
