@@ -3,6 +3,7 @@ import {
     changeCurrentPassword, 
     getCurrentUser, 
     getUserChannelProfile, 
+    getWatchHistory, 
     loginUser, 
     logoutUser, 
     refreshAccessToken, 
@@ -41,5 +42,5 @@ router.route("/update-account").patch(verifyJWt, updateAccountDetails)
 router.route("/update-avatar").patch(verifyJWt, upload.single("avatar"), updateUserAvatar)
 router.route("/update-coverimage").patch(verifyJWt, upload.single("coverImage"), updateUserCoverImage)
 router.route("/channel-profile/:username").get(verifyJWt,getUserChannelProfile)
-router.route("/watch-history").get(verifyJWt,)
+router.route("/watch-history").get(verifyJWt,getWatchHistory)
 export default router
