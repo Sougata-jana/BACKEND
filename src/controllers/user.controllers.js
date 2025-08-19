@@ -320,7 +320,9 @@ if(!username?.trim()){
 const channel = await User.aggregate([
 
   {
-    $match:{username} = username.toLowerCase()
+    $match:{
+      username: username?.toLowerCase()
+    } 
   },
   {
     $lookup:{
@@ -345,13 +347,15 @@ const channel = await User.aggregate([
       },
       channelSubscribeToCount:{
         $size:"$subscribeTo"
+      },
+      isSubscribed:{
+        $cond:{
+          if:{$in:[req.user?._id, "$subscribers.subscriber"]},
+          then:true,
+          else:false
+        }
       }
     },
-    $isSubscribed:{
-      $if:{$in:[req.user?._id, "$subscribers.subscriber"]},
-      then:true,
-      else:false
-    }
   },
   {
     $project:{
@@ -361,7 +365,7 @@ const channel = await User.aggregate([
       coverImage:1,
       subscribersCount:1,
       channelSubscribeToCount:1,
-      $isSubscribed:1
+      isSubscribed:1
     }
   }
 ])
@@ -416,7 +420,7 @@ const getWatchHistory = asyncHandler (async(req, res)=>{
   ])
   return res
   .status(200)
-  .json(new ApiResponse(200, user.watchHistoryVideos)
+  .json(new ApiResponse(200, user[0].watchHistoryVideos)
 , "Watch history fetched successfully")
 })
 export {
