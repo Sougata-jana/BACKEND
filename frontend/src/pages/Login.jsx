@@ -51,9 +51,9 @@ const Login = () => {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-            className="mx-auto w-16 h-16 bg-red-600 rounded-2xl flex items-center justify-center mb-6"
+            className="mx-auto w-16 h-16 bg-gradient-to-r from-red-600 via-pink-600 to-orange-500 rounded-2xl flex items-center justify-center mb-6"
           >
-            <span className="text-white font-bold text-2xl">Y</span>
+            <span className="text-white font-extrabold text-xl tracking-tight">BZ</span>
           </motion.div>
           <motion.h2
             initial={{ opacity: 0 }}
@@ -69,7 +69,7 @@ const Login = () => {
             transition={{ delay: 0.4 }}
             className="text-gray-600 dark:text-gray-400"
           >
-            Sign in to your YouTube Clone account
+            Sign in to your BuzzTube account
           </motion.p>
         </div>
 

@@ -1,16 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useParams } from 'react-router-dom'
-import { Play, Users } from 'lucide-react'
+import { useParams, Link } from 'react-router-dom'
+import { Play, Users, Clock, Eye } from 'lucide-react'
 import api from '../utils/api'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
+const formatViews = (views) => {
+  if (views >= 1000000) return (views / 1000000).toFixed(1) + 'M'
+  if (views >= 1000) return (views / 1000).toFixed(1) + 'K'
+  return (views || 0).toString()
+}
+
 const Channel = () => {
-  const { channelId } = useParams() // this is actually username or 'me'
-  const { user, isAuthenticated } = useAuth()
+  const { channelId } = useParams()
+  const { user, isAuthenticated, requireAuth } = useAuth()
   const [channel, setChannel] = useState(null)
   const [videoCount, setVideoCount] = useState(0)
+  const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const username = useMemo(() => (channelId === 'me' ? user?.username : channelId), [channelId, user?.username])
 
@@ -19,17 +26,14 @@ const Channel = () => {
       if (!username) return
       try {
         setLoading(true)
-        // Backend requires auth for channel profile
         const { data } = await api.get(`/user/c/${username}`)
         const ch = data.data
         setChannel(ch)
-        // fetch video count for this channel's user id using videos endpoint
         try {
           const res = await api.get('/videos', { params: { userId: ch._id, limit: 1 } })
           const total = res.data?.data?.totalDocs ?? (res.data?.data?.docs?.length || 0)
           setVideoCount(total)
         } catch (err) {
-          // ignore count error, keep page usable
           console.warn('Video count error', err)
         }
       } catch (err) {
@@ -42,22 +46,39 @@ const Channel = () => {
     fetchChannel()
   }, [username])
 
+  useEffect(() => {
+    if (!channel?._id) return
+    const fetchVideos = async () => {
+      try {
+        const { data } = await api.get('/videos', {
+          params: { userId: channel._id, limit: 24, sortBy: 'createdAt', sortType: 'desc' }
+        })
+        setVideos(data.data?.docs || [])
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Failed to load videos'
+        toast.error(msg)
+      }
+    }
+    fetchVideos()
+  }, [channel?._id])
+
   const toggleSubscription = async () => {
     if (!channel?._id) return
-    try {
-      const { data } = await api.post(`/subscriptions/toggle/${channel._id}`)
-      // Backend responds with the subscription toggled; we’ll locally update counts
-      const wasSubscribed = channel.isSubscribed
-      setChannel((prev) => ({
-        ...prev,
-        isSubscribed: !wasSubscribed,
-        subscribersCount: Math.max(0, (prev?.subscribersCount || 0) + (wasSubscribed ? -1 : 1)),
-      }))
-      toast.success(!wasSubscribed ? 'Subscribed' : 'Unsubscribed')
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Subscription failed'
-      toast.error(msg)
-    }
+    requireAuth(async () => {
+      try {
+        await api.post(`/subscriptions/toggle/${channel._id}`)
+        const wasSubscribed = channel.isSubscribed
+        setChannel((prev) => ({
+          ...prev,
+          isSubscribed: !wasSubscribed,
+          subscribersCount: Math.max(0, (prev?.subscribersCount || 0) + (wasSubscribed ? -1 : 1)),
+        }))
+        toast.success(!wasSubscribed ? 'Subscribed' : 'Unsubscribed')
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Subscription failed'
+        toast.error(msg)
+      }
+    })
   }
 
   if (loading) {
@@ -86,9 +107,7 @@ const Channel = () => {
         transition={{ duration: 0.5 }}
         className="space-y-6"
       >
-        {/* Channel Header */}
         <div className="rounded-lg overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
-          {/* Cover image */}
           <div className="h-40 sm:h-56 bg-gray-200 dark:bg-gray-800 overflow-hidden">
             {channel.coverImage ? (
               <img src={channel.coverImage} alt="cover" className="w-full h-full object-cover" />
@@ -106,7 +125,6 @@ const Channel = () => {
                 </div>
               </div>
 
-              {/* Subscribe button */}
               {isAuthenticated ? (
                 isOwnChannel ? (
                   <span className="px-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border">Your channel</span>
@@ -125,14 +143,42 @@ const Channel = () => {
           </div>
         </div>
 
-        {/* Placeholder for channel content (videos, playlists, about) */}
-        <div className="text-center py-16">
-          <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-            <Play className="w-12 h-12 text-gray-400" />
+        {videos.length ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {videos.map((video, index) => (
+              <motion.div
+                key={video._id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className="rounded-lg border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 overflow-hidden"
+              >
+                <Link to={`/video/${video._id}`} className="block relative aspect-video bg-gray-100 dark:bg-gray-800">
+                  {video.thumbnail && <img src={video.thumbnail} alt={video.title} className="w-full h-full object-cover" />}
+                  <div className="absolute bottom-2 right-2 bg-black/80 text-white text-xs px-2 py-1 rounded">
+                    {Math.floor(video.duration / 60)}:{(video.duration % 60).toString().padStart(2, '0')}
+                  </div>
+                </Link>
+                <div className="p-3 space-y-2">
+                  <Link to={`/video/${video._id}`} className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 hover:text-red-600 dark:hover:text-red-400">
+                    {video.title}
+                  </Link>
+                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                    <Eye size={14} />
+                    {formatViews(video.views)} views
+                    <span>•</span>
+                    <Clock size={14} />
+                    {new Date(video.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Channel</h2>
-          <p className="text-gray-600 dark:text-gray-400">Channel videos and playlists will appear here.</p>
-        </div>
+        ) : (
+          <div className="text-center py-16 text-gray-600 dark:text-gray-400">
+            No videos published yet.
+          </div>
+        )}
       </motion.div>
     </div>
   )

@@ -6,7 +6,7 @@ const healthCheck = asyncHandler(async (req, res) => {
         new ApiResponse(
             200,
             {
-                message: "YouTube Clone API is running successfully",
+                message: "BuzzTube API is running successfully",
                 timestamp: new Date().toISOString(),
                 uptime: process.uptime(),
                 environment: process.env.NODE_ENV || "development"

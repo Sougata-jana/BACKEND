@@ -1,4 +1,5 @@
 import mongoose, {isValidObjectId} from "mongoose";
+import jwt from "jsonwebtoken";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
 import { uploadCloudinary } from "../utils/cloudinary.js";
@@ -136,10 +137,26 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Video not found")
     }
 
-    // Increment views
     await Video.findByIdAndUpdate(videoId, {
         $inc: { views: 1 }
     })
+
+    let viewerId
+    const bearerToken = req.cookies?.accessToken || req.header("authorization")?.replace("Bearer ", "")
+    if (bearerToken) {
+        try {
+            const decoded = jwt.verify(bearerToken, process.env.ACCESS_TOKEN_SECRET)
+            viewerId = decoded?._id
+        } catch (_) {}
+    }
+
+    if (viewerId) {
+        await User.findByIdAndUpdate(
+            viewerId,
+            { $addToSet: { watchHistory: video._id } },
+            { new: true }
+        )
+    }
 
     const videoWithOwner = await Video.aggregate([
         {

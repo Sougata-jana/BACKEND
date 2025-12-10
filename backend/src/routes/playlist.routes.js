@@ -12,18 +12,16 @@ import { verifyJWt } from "../middlewares/auth.middlewares.js";
 
 const router = Router();
 
-router.use(verifyJWt) // Apply verifyJWt middleware to all routes in this file
-
-router.route("/").post(createPlaylist)
+router.route("/").post(verifyJWt, createPlaylist)
 
 router.route("/user/:userId").get(getUserPlaylists)
 
 router.route("/:playlistId")
     .get(getPlaylistById)
-    .patch(updatePlaylist)
-    .delete(deletePlaylist)
+    .patch(verifyJWt, updatePlaylist)
+    .delete(verifyJWt, deletePlaylist)
 
-router.route("/add/:playlistId/:videoId").post(addVideoToPlaylist)
-router.route("/remove/:playlistId/:videoId").delete(removeVideoFromPlaylist)
+router.route("/add/:playlistId/:videoId").post(verifyJWt, addVideoToPlaylist)
+router.route("/remove/:playlistId/:videoId").delete(verifyJWt, removeVideoFromPlaylist)
 
 export default router;

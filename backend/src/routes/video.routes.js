@@ -12,11 +12,10 @@ import { verifyJWt } from "../middlewares/auth.middlewares.js";
 
 const router = Router();
 
-router.use(verifyJWt) // Apply verifyJWt middleware to all routes in this file
-
 router.route("/")
     .get(getAllVideos)
     .post(
+        verifyJWt,
         upload.fields([
             {
                 name: "videoFile",
@@ -32,10 +31,10 @@ router.route("/")
 
 router.route("/:videoId")
     .get(getVideoById)
-    .delete(deleteVideo)
-    .patch(updateVideo)
+    .delete(verifyJWt, deleteVideo)
+    .patch(verifyJWt, updateVideo)
 
 router.route("/toggle/publish/:videoId")
-    .patch(togglePublishStatus)
+    .patch(verifyJWt, togglePublishStatus)
 
 export default router;

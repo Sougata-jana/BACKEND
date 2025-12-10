@@ -4,7 +4,6 @@ import { User } from "../models/user.model.js";
 import { uploadCloudinary,  } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
-import { useId } from "react";
 import mongoose from "mongoose";
 
 
@@ -14,7 +13,7 @@ const generatingRefreshAndAccessToken = async(userid)=>{
     const accessToken = user.generateAccessToken()
     const refreshToken =  user.generateRefreshToken()
     user.refreshToken = refreshToken
-    await user.save({validatebeforeSave: false})
+    await user.save({validateBeforeSave: false})
 
     return{refreshToken, accessToken}
 
@@ -195,16 +194,16 @@ const refreshAccessToken = asyncHandler(async(req, res)=>{
    httpOnly: true,
    secure: true
   }
-  const {accessToken, newrefreshToken}=await generatingRefreshAndAccessToken(user._id)
+  const {accessToken, refreshToken: newRefreshToken}=await generatingRefreshAndAccessToken(user._id)
  
   return res
   .status(200)
   .cookie("accessToken", accessToken, option)
-  .cookie("refreshToken", newrefreshToken, option)
+  .cookie("refreshToken", newRefreshToken, option)
   .json(
    new ApiResponse(200,{
      accessToken,
-     refreshToken : newrefreshToken
+     refreshToken : newRefreshToken
    },
    "Access token refreshed successfully"
    )
@@ -240,14 +239,14 @@ return res
 const updateAccountDetails = asyncHandler(async(req,res)=>{
   const {fullname, username, email} = req.body
 
-  const user = User.findByIdAndUpdate(req.user?._id,
-   
-     {
-        $set:{
-          fullname,
-           username,
-           email,
-        }
+  const updates = {}
+  if(fullname) updates.fullname = fullname
+  if(username) updates.username = username
+  if(email) updates.email = email
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: updates
     },
     {
       new: true
@@ -264,7 +263,7 @@ const updateUserAvatar = asyncHandler(async(req, res)=>
   if(!avatarLocalPath){
     throw new ApiError(400, "Avatar file is missing")
   }
-   const avatar = uploadCloudinary(avatarLocalPath)
+   const avatar = await uploadCloudinary(avatarLocalPath)
 
   if(!avatar.url){
     throw new ApiError(400, "Error while uploading avatar")
@@ -291,7 +290,7 @@ const updateUserCoverImage = asyncHandler(async(req, res)=>
   if(!coverImageLocalPath){
     throw new ApiError(400, "Cover image file is missing")
   }
-   const coverImage = uploadCloudinary(coverImageLocalPath)
+   const coverImage = await uploadCloudinary(coverImageLocalPath)
 
   if(!coverImage.url){
     throw new ApiError(400, "Error while uploading cover image")
@@ -420,8 +419,7 @@ const getWatchHistory = asyncHandler (async(req, res)=>{
   ])
   return res
   .status(200)
-  .json(new ApiResponse(200, user[0].watchHistoryVideos)
-, "Watch history fetched successfully")
+  .json(new ApiResponse(200, user[0]?.watchHistoryVideos || [], "Watch history fetched successfully"))
 })
 export {
   registerUser,

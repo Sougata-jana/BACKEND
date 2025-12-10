@@ -47,7 +47,7 @@ const Sidebar = ({ onClose }) => {
     <div className="flex flex-col h-full">
       {/* Close button for mobile */}
       <div className="flex items-center justify-between p-4 lg:hidden">
-        <h1 className="text-xl font-bold text-gradient">YouTube Clone</h1>
+        <h1 className="text-xl font-bold text-gradient">BuzzTube</h1>
         <button
           onClick={onClose}
           className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"

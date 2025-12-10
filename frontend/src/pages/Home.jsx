@@ -85,7 +85,7 @@ const Home = () => {
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-          Welcome to YouTube Clone
+          Welcome to BuzzTube
         </h1>
         <p className="text-gray-600 dark:text-gray-400">
           Discover amazing videos from creators around the world

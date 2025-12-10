@@ -44,9 +44,7 @@ const Header = ({ onMenuClick }) => {
   return (
     <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
       <div className="flex items-center justify-between px-4 py-3">
-        {/* Left section */}
         <div className="flex items-center space-x-4">
-          {/* Menu button */}
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
@@ -56,17 +54,16 @@ const Header = ({ onMenuClick }) => {
             <Menu size={20} className="text-gray-600 dark:text-gray-400" />
           </motion.button>
 
-          {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <motion.div
               whileHover={{ rotate: 360 }}
               transition={{ duration: 0.6 }}
-              className="w-8 h-8 bg-red-600 rounded-lg flex items-center justify-center"
+              className="w-9 h-9 bg-gradient-to-r from-red-600 via-pink-600 to-orange-500 rounded-xl flex items-center justify-center shadow-sm"
             >
-              <span className="text-white font-bold text-lg">Y</span>
+              <span className="text-white font-extrabold text-base tracking-tight">BZ</span>
             </motion.div>
             <span className="text-xl font-bold text-gradient hidden sm:block">
-              YouTube Clone
+              BuzzTube
             </span>
           </Link>
         </div>
