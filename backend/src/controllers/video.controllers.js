@@ -2,6 +2,7 @@ import mongoose, {isValidObjectId} from "mongoose";
 import jwt from "jsonwebtoken";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
+import { Like } from "../models/like.model.js";
 import { uploadCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -158,6 +159,14 @@ const getVideoById = asyncHandler(async (req, res) => {
         )
     }
 
+    const likeCount = await Like.countDocuments({ video: videoId })
+    
+    let isLiked = false
+    if (viewerId) {
+        const userLike = await Like.findOne({ video: videoId, likeBy: viewerId })
+        isLiked = !!userLike
+    }
+
     const videoWithOwner = await Video.aggregate([
         {
             $match: {
@@ -185,7 +194,9 @@ const getVideoById = asyncHandler(async (req, res) => {
             $addFields: {
                 owner: {
                     $first: "$owner"
-                }
+                },
+                likeCount: likeCount,
+                isLiked: isLiked
             }
         }
     ])

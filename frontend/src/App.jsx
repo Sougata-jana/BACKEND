@@ -15,6 +15,8 @@ import Register from './pages/Register'
 import NotFound from './pages/NotFound'
 import Upload from './pages/Upload'
 import MyVideos from './pages/MyVideos'
+import Trending from './pages/Trending'
+import WatchLater from './pages/WatchLater'
 
 function App() {
   return (
@@ -38,6 +40,8 @@ function App() {
               <Route path="history" element={<History />} />
               <Route path="liked" element={<LikedVideos />} />
               <Route path="playlist/:playlistId" element={<Playlist />} />
+              <Route path="trending" element={<Trending />} />
+              <Route path="watch-later" element={<WatchLater />} />
             </Route>
             
             {/* 404 page */}

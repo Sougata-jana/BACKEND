@@ -26,18 +26,18 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 
     let like
     if (existingLike) {
-        // Unlike the video
         await Like.findByIdAndDelete(existingLike._id)
         like = null
     } else {
-        // Like the video
         like = await Like.create({
             video: videoId,
             likeBy: req.user._id
         })
     }
 
-    return res.status(200).json(new ApiResponse(200, { like }, `Video ${like ? "liked" : "unliked"} successfully`))
+    const likeCount = await Like.countDocuments({ video: videoId })
+
+    return res.status(200).json(new ApiResponse(200, { like, likeCount, isLiked: !!like }, `Video ${like ? "liked" : "unliked"} successfully`))
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
