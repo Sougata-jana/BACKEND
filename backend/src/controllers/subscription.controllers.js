@@ -8,6 +8,8 @@ import { ApiError } from "../utils/ApiError.js";
 const toggleSubscription = asyncHandler(async (req, res) => {
     const { channelId } = req.params
 
+    console.log('Toggle subscription request - User:', req.user._id, 'Channel:', channelId)
+
     if (!isValidObjectId(channelId)) {
         throw new ApiError(400, "Invalid channel id")
     }
@@ -26,20 +28,33 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         channel: channelId
     })
 
+    console.log('Existing subscription:', existingSubscription ? 'Yes' : 'No')
+
     let subscription
+    let isSubscribed
     if (existingSubscription) {
         // Unsubscribe
         await Subscription.findByIdAndDelete(existingSubscription._id)
         subscription = null
+        isSubscribed = false
+        console.log('Unsubscribed successfully')
     } else {
         // Subscribe
         subscription = await Subscription.create({
             subscriber: req.user._id,
             channel: channelId
         })
+        isSubscribed = true
+        console.log('Subscribed successfully, subscription ID:', subscription._id)
     }
 
-    return res.status(200).json(new ApiResponse(200, { subscription }, `Channel ${subscription ? "subscribed" : "unsubscribed"} successfully`))
+    return res.status(200).json(
+        new ApiResponse(
+            200, 
+            { subscription, isSubscribed }, 
+            `Channel ${subscription ? "subscribed" : "unsubscribed"} successfully`
+        )
+    )
 })
 
 const getUserChannelSubscribers = asyncHandler(async (req, res) => {

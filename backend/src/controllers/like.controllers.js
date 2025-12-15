@@ -26,18 +26,73 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
 
     let like
     if (existingLike) {
-        await Like.findByIdAndDelete(existingLike._id)
-        like = null
+        if (existingLike.isLike === true) {
+            // If already liked, remove it
+            await Like.findByIdAndDelete(existingLike._id)
+            like = null
+        } else {
+            // If disliked, change to like
+            existingLike.isLike = true
+            await existingLike.save()
+            like = existingLike
+        }
     } else {
+        // Create new like
         like = await Like.create({
             video: videoId,
-            likeBy: req.user._id
+            likeBy: req.user._id,
+            isLike: true
         })
     }
 
-    const likeCount = await Like.countDocuments({ video: videoId })
+    const likeCount = await Like.countDocuments({ video: videoId, isLike: true })
+    const dislikeCount = await Like.countDocuments({ video: videoId, isLike: false })
 
-    return res.status(200).json(new ApiResponse(200, { like, likeCount, isLiked: !!like }, `Video ${like ? "liked" : "unliked"} successfully`))
+    return res.status(200).json(new ApiResponse(200, { like, likeCount, dislikeCount, isLiked: !!like }, `Video ${like ? "liked" : "unliked"} successfully`))
+})
+
+const toggleVideoDislike = asyncHandler(async (req, res) => {
+    const { videoId } = req.params
+
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video id")
+    }
+
+    const video = await Video.findById(videoId)
+    if (!video) {
+        throw new ApiError(404, "Video not found")
+    }
+
+    const existingLike = await Like.findOne({
+        video: videoId,
+        likeBy: req.user._id
+    })
+
+    let dislike
+    if (existingLike) {
+        if (existingLike.isLike === false) {
+            // If already disliked, remove it
+            await Like.findByIdAndDelete(existingLike._id)
+            dislike = null
+        } else {
+            // If liked, change to dislike
+            existingLike.isLike = false
+            await existingLike.save()
+            dislike = existingLike
+        }
+    } else {
+        // Create new dislike
+        dislike = await Like.create({
+            video: videoId,
+            likeBy: req.user._id,
+            isLike: false
+        })
+    }
+
+    const likeCount = await Like.countDocuments({ video: videoId, isLike: true })
+    const dislikeCount = await Like.countDocuments({ video: videoId, isLike: false })
+
+    return res.status(200).json(new ApiResponse(200, { dislike, likeCount, dislikeCount, isDisliked: !!dislike }, `Video ${dislike ? "disliked" : "undisliked"} successfully`))
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
@@ -119,7 +174,8 @@ const getLikedVideos = asyncHandler(async (req, res) => {
         {
             $match: {
                 likeBy: new mongoose.Types.ObjectId(req.user._id),
-                video: { $exists: true }
+                video: { $exists: true },
+                isLike: true
             }
         },
         {
@@ -177,6 +233,7 @@ const getLikedVideos = asyncHandler(async (req, res) => {
 
 export {
     toggleVideoLike,
+    toggleVideoDislike,
     toggleCommentLike,
     toggleTweetLike,
     getLikedVideos

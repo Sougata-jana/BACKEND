@@ -17,6 +17,9 @@ import Upload from './pages/Upload'
 import MyVideos from './pages/MyVideos'
 import Trending from './pages/Trending'
 import WatchLater from './pages/WatchLater'
+import Dashboard from './pages/Dashboard'
+import Settings from './pages/Settings'
+import Subscriptions from './pages/Subscriptions'
 
 function App() {
   return (
@@ -42,6 +45,9 @@ function App() {
               <Route path="playlist/:playlistId" element={<Playlist />} />
               <Route path="trending" element={<Trending />} />
               <Route path="watch-later" element={<WatchLater />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="subscriptions" element={<Subscriptions />} />
             </Route>
             
             {/* 404 page */}

@@ -26,8 +26,10 @@ const Channel = () => {
       if (!username) return
       try {
         setLoading(true)
+        setChannel(null) // Reset channel state to ensure fresh data
         const { data } = await api.get(`/user/c/${username}`)
         const ch = data.data
+        console.log('Fetched channel data:', { isSubscribed: ch.isSubscribed, subscribersCount: ch.subscribersCount })
         setChannel(ch)
         try {
           const res = await api.get('/videos', { params: { userId: ch._id, limit: 1 } })
@@ -66,14 +68,16 @@ const Channel = () => {
     if (!channel?._id) return
     requireAuth(async () => {
       try {
-        await api.post(`/subscriptions/toggle/${channel._id}`)
-        const wasSubscribed = channel.isSubscribed
+        const response = await api.post(`/subscriptions/toggle/${channel._id}`)
+        const { isSubscribed } = response.data.data
+        
         setChannel((prev) => ({
           ...prev,
-          isSubscribed: !wasSubscribed,
-          subscribersCount: Math.max(0, (prev?.subscribersCount || 0) + (wasSubscribed ? -1 : 1)),
+          isSubscribed: isSubscribed,
+          subscribersCount: Math.max(0, (prev?.subscribersCount || 0) + (isSubscribed ? 1 : -1)),
         }))
-        toast.success(!wasSubscribed ? 'Subscribed' : 'Unsubscribed')
+        toast.success(isSubscribed ? 'Subscribed' : 'Unsubscribed')
+        console.log('Subscription toggled, new status:', isSubscribed)
       } catch (err) {
         const msg = err.response?.data?.message || 'Subscription failed'
         toast.error(msg)

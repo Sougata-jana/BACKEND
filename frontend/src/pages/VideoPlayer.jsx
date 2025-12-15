@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../utils/api'
-import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Gauge } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
@@ -12,7 +12,9 @@ const VideoPlayer = () => {
   const [loading, setLoading] = useState(true)
   const [likeBusy, setLikeBusy] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [dislikeCount, setDislikeCount] = useState(0)
   const [isLiked, setIsLiked] = useState(false)
+  const [isDisliked, setIsDisliked] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -34,6 +36,10 @@ const VideoPlayer = () => {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [playbackRate, setPlaybackRate] = useState(1)
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false)
+  const [showQualityMenu, setShowQualityMenu] = useState(false)
+  const [selectedQuality, setSelectedQuality] = useState('auto')
 
   useEffect(() => {
     fetchVideo()
@@ -46,7 +52,9 @@ const VideoPlayer = () => {
       const videoData = response.data.data
       setVideo(videoData)
       setLikeCount(videoData.likeCount || 0)
+      setDislikeCount(videoData.dislikeCount || 0)
       setIsLiked(videoData.isLiked || false)
+      setIsDisliked(videoData.isDisliked || false)
       if (videoData.owner?._id && user?._id) {
         try {
           const subRes = await api.get(`/user/c/${videoData.owner.username}`)
@@ -181,6 +189,17 @@ const VideoPlayer = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
+  const changePlaybackRate = (rate) => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate
+      setPlaybackRate(rate)
+      setShowSpeedMenu(false)
+    }
+  }
+
+  const speedOptions = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
+  const qualityOptions = ['auto', '1080p', '720p', '480p', '360p', '240p']
+
   const onToggleLike = () => {
     requireAuth(async () => {
       if (!video) return
@@ -188,10 +207,32 @@ const VideoPlayer = () => {
         setLikeBusy(true)
         const { data } = await api.post(`/likes/toggle/v/${video._id}`)
         setIsLiked(data.data.isLiked)
+        setIsDisliked(false)
         setLikeCount(data.data.likeCount || 0)
+        setDislikeCount(data.data.dislikeCount || 0)
         toast.success(data.data.isLiked ? 'Liked' : 'Unliked')
       } catch (err) {
         const msg = err.response?.data?.message || 'Failed to toggle like'
+        toast.error(msg)
+      } finally {
+        setLikeBusy(false)
+      }
+    })
+  }
+
+  const onToggleDislike = () => {
+    requireAuth(async () => {
+      if (!video) return
+      try {
+        setLikeBusy(true)
+        const { data } = await api.post(`/likes/toggle/dislike/v/${video._id}`)
+        setIsDisliked(data.data.isDisliked)
+        setIsLiked(false)
+        setLikeCount(data.data.likeCount || 0)
+        setDislikeCount(data.data.dislikeCount || 0)
+        toast.success(data.data.isDisliked ? 'Disliked' : 'Removed dislike')
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Failed to toggle dislike'
         toast.error(msg)
       } finally {
         setLikeBusy(false)
@@ -320,45 +361,47 @@ const VideoPlayer = () => {
           />
 
           {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer" onClick={togglePlay}>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer" onClick={togglePlay}>
               <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                className="w-20 h-20 bg-black/70 rounded-full flex items-center justify-center text-white shadow-lg"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl border-4 border-white/20"
               >
-                <Play size={40} className="ml-2" />
+                <Play size={48} className="ml-2 fill-white" />
               </motion.div>
             </div>
           )}
 
           {isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 cursor-pointer" onClick={togglePlay}>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 cursor-pointer" onClick={togglePlay}>
               <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="w-16 h-16 bg-black/70 rounded-full flex items-center justify-center text-white"
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-20 h-20 bg-black/80 rounded-full flex items-center justify-center text-white shadow-2xl border-2 border-white/30"
               >
-                <Pause size={32} />
+                <Pause size={36} />
               </motion.button>
             </div>
           )}
 
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="flex items-center gap-2 mb-2">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-3">
               <motion.button
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                   e.stopPropagation()
                   togglePlay()
                 }}
-                className="text-white hover:text-red-500 transition-colors"
+                className="text-white hover:text-red-400 transition-colors p-2 hover:bg-white/10 rounded-full"
               >
-                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
               </motion.button>
 
               <div
-                className="flex-1 relative h-1.5 bg-white/30 rounded-full cursor-pointer group/seek"
+                className="flex-1 relative h-2 bg-white/20 rounded-full cursor-pointer group/seek hover:h-2.5 transition-all"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleSeek(e)
@@ -369,23 +412,23 @@ const VideoPlayer = () => {
                   style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                 />
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full -ml-1.5 opacity-0 group-hover/seek:opacity-100 transition-opacity"
+                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-red-600 rounded-full -ml-2 opacity-0 group-hover/seek:opacity-100 transition-opacity shadow-lg border-2 border-white"
                   style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                 />
               </div>
 
-              <span className="text-white text-xs min-w-[100px] text-right">{formatTime(currentTime)} / {formatTime(duration)}</span>
+              <span className="text-white text-sm font-medium min-w-[110px] text-right">{formatTime(currentTime)} / {formatTime(duration)}</span>
 
               <motion.button
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleMute()
                 }}
-                className="text-white hover:text-red-500 transition-colors"
+                className="text-white hover:text-red-400 transition-colors p-2 hover:bg-white/10 rounded-full"
               >
-                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
+                {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
               </motion.button>
 
               <input
@@ -396,19 +439,99 @@ const VideoPlayer = () => {
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
                 onClick={(e) => e.stopPropagation()}
-                className="w-20 h-1 cursor-pointer"
+                className="w-24 h-2 cursor-pointer accent-red-600"
+                style={{
+                  background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) 100%)`
+                }}
               />
 
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowSpeedMenu(!showSpeedMenu)
+                    setShowQualityMenu(false)
+                  }}
+                  className="text-white hover:text-red-400 transition-colors flex items-center gap-1.5 px-3 py-2 hover:bg-white/10 rounded-lg"
+                >
+                  <Gauge size={22} />
+                  <span className="text-sm font-medium">{playbackRate}x</span>
+                </motion.button>
+                {showSpeedMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-lg py-2 min-w-[140px] z-50 shadow-2xl border border-white/20">
+                    <div className="px-3 py-2 border-b border-white/20 mb-1">
+                      <p className="text-xs font-semibold text-white/80 uppercase">Playback Speed</p>
+                    </div>
+                    {speedOptions.map((speed) => (
+                      <button
+                        key={speed}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          changePlaybackRate(speed)
+                        }}
+                        className={`w-full px-4 py-2.5 text-left text-sm hover:bg-white/20 transition-colors flex items-center justify-between ${
+                          playbackRate === speed ? 'text-red-400 font-bold bg-white/10' : 'text-white'
+                        }`}
+                      >
+                        <span>{speed}x {speed === 1 && '(Normal)'}</span>
+                        {playbackRate === speed && <span className="text-red-400">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.15 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setShowQualityMenu(!showQualityMenu)
+                    setShowSpeedMenu(false)
+                  }}
+                  className="text-white hover:text-red-400 transition-colors flex items-center gap-1.5 px-3 py-2 hover:bg-white/10 rounded-lg"
+                >
+                  <Settings size={22} />
+                  <span className="text-sm font-medium">{selectedQuality}</span>
+                </motion.button>
+                {showQualityMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-lg py-2 min-w-[140px] z-50 shadow-2xl border border-white/20">
+                    <div className="px-3 py-2 border-b border-white/20 mb-1">
+                      <p className="text-xs font-semibold text-white/80 uppercase">Quality</p>
+                    </div>
+                    {qualityOptions.map((quality) => (
+                      <button
+                        key={quality}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedQuality(quality)
+                          setShowQualityMenu(false)
+                        }}
+                        className={`w-full px-4 py-2.5 text-left text-sm hover:bg-white/20 transition-colors flex items-center justify-between ${
+                          selectedQuality === quality ? 'text-red-400 font-bold bg-white/10' : 'text-white'
+                        }`}
+                      >
+                        <span>{quality}</span>
+                        {selectedQuality === quality && <span className="text-red-400">✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <motion.button
-                whileHover={{ scale: 1.1 }}
+                whileHover={{ scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleFullscreen()
                 }}
-                className="text-white hover:text-red-500 transition-colors"
+                className="text-white hover:text-red-400 transition-colors p-2 hover:bg-white/10 rounded-full"
               >
-                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
               </motion.button>
             </div>
           </div>
@@ -454,10 +577,15 @@ const VideoPlayer = () => {
                 whileHover={{ scale: likeBusy ? 1 : 1.03 }}
                 whileTap={{ scale: likeBusy ? 1 : 0.97 }}
                 disabled={likeBusy}
-                onClick={() => toast.info('Dislike feature coming soon')}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
+                onClick={onToggleDislike}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm ${
+                  isDisliked
+                    ? 'bg-gray-600 text-white hover:bg-gray-700'
+                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
               >
                 <ThumbsDown size={18} />
+                {dislikeCount > 0 && dislikeCount.toLocaleString()}
               </motion.button>
             </div>
           </div>

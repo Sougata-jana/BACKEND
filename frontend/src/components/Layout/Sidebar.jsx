@@ -15,10 +15,11 @@ import {
   User,
   Play,
   Search,
-  X
+  X,
+  BarChart3
 } from 'lucide-react'
 
-const Sidebar = ({ onClose }) => {
+const Sidebar = ({ onClose, collapsed = false }) => {
   const location = useLocation()
   const { user, logout } = useAuth()
 
@@ -34,6 +35,7 @@ const Sidebar = ({ onClose }) => {
     { icon: Video, label: 'Your videos', path: '/my-videos' },
     { icon: Clock, label: 'Watch later', path: '/watch-later' },
     { icon: ThumbsUp, label: 'Liked videos', path: '/liked' },
+    { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
   ]
 
   const isActive = (path) => location.pathname === path
@@ -193,13 +195,13 @@ const Sidebar = ({ onClose }) => {
       </nav>
 
       {/* User info at bottom */}
-      {user && (
+      {user && !collapsed && (
         <div className="p-4 border-t border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-3">
             <img
               src={user.avatar}
               alt={user.fullname}
-              className="w-8 h-8 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover"
             />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
@@ -210,6 +212,17 @@ const Sidebar = ({ onClose }) => {
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* User avatar only in collapsed mode */}
+      {user && collapsed && (
+        <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex justify-center">
+          <img
+            src={user.avatar}
+            alt={user.fullname}
+            className="w-10 h-10 rounded-full object-cover"
+          />
         </div>
       )}
     </div>

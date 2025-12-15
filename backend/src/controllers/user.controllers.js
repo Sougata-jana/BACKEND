@@ -349,7 +349,12 @@ const channel = await User.aggregate([
       },
       isSubscribed:{
         $cond:{
-          if:{$in:[req.user?._id, "$subscribers.subscriber"]},
+          if:{
+            $and:[
+              {$ne:[req.user?._id, null]},
+              {$in:[req.user?._id, "$subscribers.subscriber"]}
+            ]
+          },
           then:true,
           else:false
         }
