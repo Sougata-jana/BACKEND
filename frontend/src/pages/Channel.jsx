@@ -104,45 +104,106 @@ const Channel = () => {
   const isOwnChannel = user?._id && channel?._id && user._id === channel._id
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="space-y-6"
+        className="space-y-8"
       >
-        <div className="rounded-lg overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800">
-          <div className="h-40 sm:h-56 bg-gray-200 dark:bg-gray-800 overflow-hidden">
+        {/* Modern Channel Header */}
+        <div className="rounded-2xl overflow-hidden bg-white dark:bg-gray-900 shadow-xl border border-gray-100 dark:border-gray-800">
+          {/* Cover Image with Gradient Overlay */}
+          <div className="h-48 sm:h-64 bg-gradient-to-br from-red-500 via-pink-500 to-purple-600 overflow-hidden relative">
             {channel.coverImage ? (
-              <img src={channel.coverImage} alt="cover" className="w-full h-full object-cover" />
-            ) : null}
+              <>
+                <img src={channel.coverImage} alt="cover" className="w-full h-full object-cover" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              </>
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-red-500 via-pink-500 to-purple-600" />
+            )}
           </div>
-          <div className="p-6">
-            <div className="flex items-start gap-4">
-              <img src={channel.avatar} alt={channel.username} className="w-24 h-24 rounded-full object-cover border" />
+          
+          {/* Channel Info */}
+          <div className="p-6 sm:p-8">
+            <div className="flex flex-col sm:flex-row items-start gap-6">
+              {/* Avatar with Ring */}
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: "spring" }}
+                className="-mt-16 sm:-mt-20"
+              >
+                <div className="p-1 bg-gradient-to-br from-red-500 to-pink-500 rounded-full">
+                  <img 
+                    src={channel.avatar} 
+                    alt={channel.username} 
+                    className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover border-4 border-white dark:border-gray-900" 
+                  />
+                </div>
+              </motion.div>
+              
               <div className="flex-1">
-                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{channel.fullname}</h1>
-                <p className="text-gray-600 dark:text-gray-400">@{channel.username}</p>
-                <div className="mt-3 flex items-center gap-4 text-sm text-gray-700 dark:text-gray-300">
-                  <span className="inline-flex items-center gap-1"><Users size={16} /> {channel.subscribersCount || 0} subscribers</span>
-                  <span className="inline-flex items-center gap-1"><Play size={16} /> {videoCount} videos</span>
+                <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-1">
+                  {channel.fullname}
+                </h1>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">@{channel.username}</p>
+                <div className="flex flex-wrap items-center gap-6 text-sm">
+                  <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <div className="p-2 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                      <Users size={18} className="text-red-600 dark:text-red-400" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">{(channel.subscribersCount || 0).toLocaleString()}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">subscribers</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
+                    <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                      <Play size={18} className="text-purple-600 dark:text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-lg">{videoCount}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">videos</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {isAuthenticated ? (
-                isOwnChannel ? (
-                  <span className="px-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border">Your channel</span>
+              {/* Subscribe Button */}
+              <div className="w-full sm:w-auto">
+                {isAuthenticated ? (
+                  isOwnChannel ? (
+                    <motion.span 
+                      whileHover={{ scale: 1.02 }}
+                      className="inline-flex items-center px-6 py-3 rounded-xl text-sm font-semibold glass border shadow-sm"
+                    >
+                      Your channel
+                    </motion.span>
+                  ) : (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={toggleSubscription}
+                      className={`w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 ${
+                        channel.isSubscribed 
+                          ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700' 
+                          : 'btn-gradient text-white'
+                      }`}
+                    >
+                      {channel.isSubscribed ? '✓ Subscribed' : 'Subscribe'}
+                    </motion.button>
+                  )
                 ) : (
-                <button
-                  onClick={toggleSubscription}
-                  className={`px-6 py-2 rounded-full font-medium ${channel.isSubscribed ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'bg-red-600 text-white hover:bg-red-700'}`}
-                >
-                  {channel.isSubscribed ? 'Subscribed' : 'Subscribe'}
-                </button>
-                )
-              ) : (
-                <a href="/login" className="px-6 py-2 rounded-full font-medium bg-red-600 text-white">Sign in to subscribe</a>
-              )}
+                  <Link 
+                    to="/login" 
+                    className="inline-block w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm btn-gradient text-white text-center shadow-lg"
+                  >
+                    Sign in to subscribe
+                  </Link>
+                )}
+              </div>
             </div>
           </div>
         </div>

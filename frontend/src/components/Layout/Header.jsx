@@ -68,27 +68,27 @@ const Header = ({ onMenuClick }) => {
   }
 
   return (
-    <header className="sticky top-0 z-30 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+    <header className="sticky top-0 z-40 glass backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center space-x-4">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={onMenuClick}
-            className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors lg:hidden"
+            className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 lg:hidden"
           >
-            <Menu size={20} className="text-gray-600 dark:text-gray-400" />
+            <Menu size={20} className="text-gray-700 dark:text-gray-300" />
           </motion.button>
 
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-3">
             <motion.div
-              whileHover={{ rotate: 360 }}
-              transition={{ duration: 0.6 }}
-              className="w-9 h-9 bg-gradient-to-r from-red-600 via-pink-600 to-orange-500 rounded-xl flex items-center justify-center shadow-sm"
+              whileHover={{ rotate: 360, scale: 1.1 }}
+              transition={{ duration: 0.6, type: "spring" }}
+              className="w-10 h-10 bg-gradient-to-br from-red-600 via-pink-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg"
             >
-              <span className="text-white font-extrabold text-base tracking-tight">BZ</span>
+              <span className="text-white font-black text-lg">BZ</span>
             </motion.div>
-            <span className="text-xl font-bold text-gradient hidden sm:block">
+            <span className="text-2xl font-black text-gradient hidden sm:block">
               BuzzTube
             </span>
           </Link>

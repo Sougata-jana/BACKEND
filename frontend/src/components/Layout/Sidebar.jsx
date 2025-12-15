@@ -69,22 +69,22 @@ const Sidebar = ({ onClose, collapsed = false }) => {
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                className={`flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 group ${
                   isActive(item.path)
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+                    ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/30'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-900/20 dark:hover:to-pink-900/20 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.15, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   <Icon 
                     size={20} 
                     className={`mr-3 ${
                       isActive(item.path) 
-                        ? 'text-red-600 dark:text-red-400' 
-                        : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'
+                        ? 'text-white' 
+                        : 'text-gray-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400'
                     }`} 
                   />
                 </motion.div>
@@ -99,7 +99,7 @@ const Sidebar = ({ onClose, collapsed = false }) => {
 
         {/* Library section */}
         <div className="space-y-1">
-          <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          <h3 className="px-4 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
             Library
           </h3>
           {libraryItems.map((item) => {
@@ -109,22 +109,22 @@ const Sidebar = ({ onClose, collapsed = false }) => {
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 group ${
+                className={`flex items-center px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 group ${
                   isActive(item.path)
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100'
+                    ? 'bg-gradient-to-r from-red-500 to-pink-500 text-white shadow-lg shadow-red-500/30'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 dark:hover:from-red-900/20 dark:hover:to-pink-900/20 hover:text-gray-900 dark:hover:text-gray-100'
                 }`}
               >
                 <motion.div
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileHover={{ scale: 1.15, rotate: 5 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   <Icon 
                     size={20} 
                     className={`mr-3 ${
                       isActive(item.path) 
-                        ? 'text-red-600 dark:text-red-400' 
-                        : 'text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-200'
+                        ? 'text-white' 
+                        : 'text-gray-500 dark:text-gray-400 group-hover:text-red-600 dark:group-hover:text-red-400'
                     }`} 
                   />
                 </motion.div>
