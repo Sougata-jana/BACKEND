@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
 import Layout from './components/Layout/Layout'
 import Home from './pages/Home'
 import VideoPlayer from './pages/VideoPlayer'
@@ -24,9 +25,10 @@ import Subscriptions from './pages/Subscriptions'
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-          <Routes>
+      <NotificationProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <Routes>
             {/* Public routes */}
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
@@ -80,6 +82,7 @@ function App() {
           />
         </div>
       </Router>
+      </NotificationProvider>
     </AuthProvider>
   )
 }

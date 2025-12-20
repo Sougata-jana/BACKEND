@@ -6,6 +6,7 @@ import { Tweet } from "../models/tweet.models.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import { createNotification } from "./notification.controllers.js";
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
     const { videoId } = req.params
@@ -42,6 +43,16 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
             video: videoId,
             likeBy: req.user._id,
             isLike: true
+        })
+        
+        // Create notification for video owner
+        await createNotification({
+            recipient: video.owner,
+            sender: req.user._id,
+            type: 'like',
+            content: `${req.user.username} liked your video: ${video.title}`,
+            video: videoId,
+            actionUrl: `/video/${videoId}`
         })
     }
 

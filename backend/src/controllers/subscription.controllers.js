@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import { createNotification } from "./notification.controllers.js";
 
 const toggleSubscription = asyncHandler(async (req, res) => {
     const { channelId } = req.params
@@ -46,6 +47,15 @@ const toggleSubscription = asyncHandler(async (req, res) => {
         })
         isSubscribed = true
         console.log('Subscribed successfully, subscription ID:', subscription._id)
+        
+        // Create notification for channel owner
+        await createNotification({
+            recipient: channelId,
+            sender: req.user._id,
+            type: 'subscription',
+            content: `${req.user.username} subscribed to your channel`,
+            actionUrl: `/channel/${req.user._id}`
+        })
     }
 
     return res.status(200).json(

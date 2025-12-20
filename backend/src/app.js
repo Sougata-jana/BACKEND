@@ -36,6 +36,7 @@ import playlistRoutes from './routes/playlist.routes.js';
 import subscriptionRoutes from './routes/subscription.routes.js';
 import tweetRoutes from './routes/tweet.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 import { healthCheck } from './controllers/healthCheck.controllers.js';
 
 // routes declaration
@@ -49,6 +50,7 @@ app.use("/api/v1/playlists", playlistRoutes)
 app.use("/api/v1/subscriptions", subscriptionRoutes)
 app.use("/api/v1/tweets", tweetRoutes)
 app.use("/api/v1/dashboard", dashboardRoutes)
+app.use("/api/v1/notifications", notificationRoutes)
 
   // http://localhost:3000/api/v1/user/register
 

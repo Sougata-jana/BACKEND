@@ -4,6 +4,7 @@ import { Video } from "../models/video.model.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import { createNotification } from "./notification.controllers.js";
 
 const getVideoComments = asyncHandler(async (req, res) => {
     const { videoId } = req.params
@@ -82,6 +83,17 @@ const addComment = asyncHandler(async (req, res) => {
         content,
         video: videoId,
         owner: req.user._id
+    })
+    
+    // Create notification for video owner
+    await createNotification({
+        recipient: video.owner,
+        sender: req.user._id,
+        type: 'comment',
+        content: `${req.user.username} commented on your video: ${video.title}`,
+        video: videoId,
+        comment: comment._id,
+        actionUrl: `/video/${videoId}`
     })
 
     const commentWithOwner = await Comment.aggregate([

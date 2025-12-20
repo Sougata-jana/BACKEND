@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../contexts/AuthContext'
+import NotificationBell from '../NotificationBell'
 import {
   Menu,
   Search,
@@ -22,13 +23,11 @@ import {
 const Header = ({ onMenuClick }) => {
   const [searchQuery, setSearchQuery] = useState('')
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const [showNotifications, setShowNotifications] = useState(false)
   const [showCreateMenu, setShowCreateMenu] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
   const { user, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
   const userMenuRef = useRef(null)
-  const notifRef = useRef(null)
   const createMenuRef = useRef(null)
 
   // Close menus when clicking outside
@@ -36,9 +35,6 @@ const Header = ({ onMenuClick }) => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false)
-      }
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setShowNotifications(false)
       }
       if (createMenuRef.current && !createMenuRef.current.contains(event.target)) {
         setShowCreateMenu(false)
@@ -143,43 +139,7 @@ const Header = ({ onMenuClick }) => {
           </motion.button>
 
           {/* Notifications */}
-          {isAuthenticated && (
-            <div className="relative" ref={notifRef}>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
-              >
-                <Bell size={20} className="text-gray-600 dark:text-gray-400" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-              </motion.button>
-
-              <AnimatePresence>
-                {showNotifications && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-gray-200 dark:border-gray-700 py-2 z-50 max-h-96 overflow-y-auto"
-                  >
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                      <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notifications</h3>
-                    </div>
-                    <div className="py-2">
-                      <div className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer">
-                        <p className="text-sm text-gray-900 dark:text-gray-100">Welcome to BuzzTube!</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">2 hours ago</p>
-                      </div>
-                      <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400 text-sm">
-                        No new notifications
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
+          {isAuthenticated && <NotificationBell />}
 
           {/* Create menu */}
           {isAuthenticated && (
