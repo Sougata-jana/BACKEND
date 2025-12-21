@@ -21,6 +21,7 @@ import WatchLater from './pages/WatchLater'
 import Dashboard from './pages/Dashboard'
 import Settings from './pages/Settings'
 import Subscriptions from './pages/Subscriptions'
+import Bookmarks from './pages/Bookmarks'
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="settings" element={<Settings />} />
               <Route path="subscriptions" element={<Subscriptions />} />
+              <Route path="bookmarks" element={<Bookmarks />} />
             </Route>
             
             {/* 404 page */}

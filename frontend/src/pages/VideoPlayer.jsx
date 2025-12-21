@@ -2,9 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../utils/api'
-import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Gauge } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Gauge, Bookmark } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
+import BookmarkModal from '../components/BookmarkModal'
+import BookmarkList from '../components/BookmarkList'
 
 const VideoPlayer = () => {
   const { videoId } = useParams()
@@ -40,6 +42,11 @@ const VideoPlayer = () => {
   const [showSpeedMenu, setShowSpeedMenu] = useState(false)
   const [showQualityMenu, setShowQualityMenu] = useState(false)
   const [selectedQuality, setSelectedQuality] = useState('auto')
+  
+  // Bookmark states
+  const [bookmarks, setBookmarks] = useState([])
+  const [showBookmarkModal, setShowBookmarkModal] = useState(false)
+  const [showBookmarks, setShowBookmarks] = useState(false)
 
   useEffect(() => {
     fetchVideo()
@@ -95,8 +102,51 @@ const VideoPlayer = () => {
   useEffect(() => {
     if (videoId) {
       fetchComments(1)
+      fetchBookmarks()
     }
   }, [videoId])
+
+  // Fetch bookmarks for this video
+  const fetchBookmarks = async () => {
+    if (!videoId || !isAuthenticated) return
+    try {
+      const { data } = await api.get(`/bookmarks/video/${videoId}`)
+      setBookmarks(data.data || [])
+    } catch (err) {
+      console.error('Failed to fetch bookmarks:', err)
+    }
+  }
+
+  // Save a new bookmark
+  const handleSaveBookmark = async (bookmarkData) => {
+    try {
+      const { data } = await api.post(`/bookmarks/video/${videoId}`, bookmarkData)
+      setBookmarks(prev => [...prev, data.data].sort((a, b) => a.timestamp - b.timestamp))
+      toast.success('Bookmark saved!')
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save bookmark')
+    }
+  }
+
+  // Delete a bookmark
+  const handleDeleteBookmark = async (bookmarkId) => {
+    try {
+      await api.delete(`/bookmarks/${bookmarkId}`)
+      setBookmarks(prev => prev.filter(b => b._id !== bookmarkId))
+      toast.success('Bookmark deleted')
+    } catch (err) {
+      toast.error('Failed to delete bookmark')
+    }
+  }
+
+  // Jump to bookmark timestamp
+  const handleJumpToBookmark = (timestamp) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = timestamp
+      videoRef.current.play()
+      setShowBookmarks(false)
+    }
+  }
 
   useEffect(() => {
     const video = videoRef.current
@@ -563,6 +613,18 @@ const VideoPlayer = () => {
                 <Share2 size={18} />
                 Share
               </motion.button>
+              {isAuthenticated && (
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setShowBookmarkModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm"
+                  title="Bookmark this moment"
+                >
+                  <Bookmark size={18} />
+                  Bookmark
+                </motion.button>
+              )}
               <motion.button
                 whileHover={{ scale: likeBusy ? 1 : 1.03 }}
                 whileTap={{ scale: likeBusy ? 1 : 0.97 }}
@@ -947,6 +1009,60 @@ const VideoPlayer = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* Bookmark Modal */}
+        <BookmarkModal
+          isOpen={showBookmarkModal}
+          onClose={() => setShowBookmarkModal(false)}
+          onSave={handleSaveBookmark}
+          currentTime={currentTime}
+          videoTitle={video?.title}
+        />
+
+        {/* Bookmarks Sidebar */}
+        {showBookmarks && isAuthenticated && (
+          <div className="fixed right-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-2xl z-40 overflow-y-auto">
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b dark:border-gray-700 p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bookmark className="w-5 h-5 text-blue-500" />
+                <h3 className="font-semibold text-gray-900 dark:text-white">
+                  Bookmarks ({bookmarks.length})
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowBookmarks(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <BookmarkList
+                bookmarks={bookmarks}
+                onJumpTo={handleJumpToBookmark}
+                onDelete={handleDeleteBookmark}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Toggle Bookmarks Button (Fixed) */}
+        {isAuthenticated && bookmarks.length > 0 && !showBookmarks && (
+          <motion.button
+            initial={{ x: 100 }}
+            animate={{ x: 0 }}
+            onClick={() => setShowBookmarks(true)}
+            className="fixed right-4 bottom-24 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 z-30"
+            title={`View ${bookmarks.length} bookmarks`}
+          >
+            <Bookmark className="w-5 h-5" />
+            {bookmarks.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {bookmarks.length}
+              </span>
+            )}
+          </motion.button>
         )}
       </motion.div>
     </div>

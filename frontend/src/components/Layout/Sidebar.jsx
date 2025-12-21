@@ -16,7 +16,8 @@ import {
   Play,
   Search,
   X,
-  BarChart3
+  BarChart3,
+  Bookmark
 } from 'lucide-react'
 
 const Sidebar = ({ onClose, collapsed = false }) => {
@@ -32,6 +33,7 @@ const Sidebar = ({ onClose, collapsed = false }) => {
   const libraryItems = [
     { icon: Library, label: 'Library', path: '/library' },
     { icon: History, label: 'History', path: '/history' },
+    { icon: Bookmark, label: 'Bookmarks', path: '/bookmarks' },
     { icon: Video, label: 'Your videos', path: '/my-videos' },
     { icon: Clock, label: 'Watch later', path: '/watch-later' },
     { icon: ThumbsUp, label: 'Liked videos', path: '/liked' },
