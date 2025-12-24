@@ -436,7 +436,7 @@ const VideoPlayer = () => {
             </div>
           )}
 
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-all duration-300">
+          <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 transition-all duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             <div className="flex items-center gap-3 mb-3">
               <motion.button
                 whileHover={{ scale: 1.15 }}
@@ -732,12 +732,12 @@ const VideoPlayer = () => {
                   <img src={user?.avatar} alt={user?.fullname} className="w-10 h-10 rounded-full object-cover" />
                   <div className="flex-1">
                     <textarea
-                      className="w-full rounded-md border text-black border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 min-h-[70px] outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full dark:text-white rounded-md border text-black border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 min-h-[70px] outline-none focus:ring-2 focus:ring-red-500"
                       placeholder="Add a public comment..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                     />
-                    <div className="mt-2 flex items-center justify-end gap-2">
+                    <div className="mt-2 dark:text-white text-gray-800 flex items-center justify-end gap-2">
                       <button type="button" onClick={() => setNewComment('')} className="px-4 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800">
                         Cancel
                       </button>

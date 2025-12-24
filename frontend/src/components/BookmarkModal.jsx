@@ -102,7 +102,7 @@ const BookmarkModal = ({ isOpen, onClose, onSave, currentTime, videoTitle }) => 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="e.g., Key moment, Important tip..."
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full px-3 py-2 text-black border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
               maxLength={100}
               required
             />
@@ -118,7 +118,7 @@ const BookmarkModal = ({ isOpen, onClose, onSave, currentTime, videoTitle }) => 
               onChange={(e) => setNote(e.target.value)}
               placeholder="Add your personal notes..."
               rows={3}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
+              className="w-full text-black px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none"
               maxLength={500}
             />
           </div>
@@ -155,7 +155,7 @@ const BookmarkModal = ({ isOpen, onClose, onSave, currentTime, videoTitle }) => 
               value={tags}
               onChange={(e) => setTags(e.target.value)}
               placeholder="tutorial, important, review"
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+              className="w-full text-black px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
             />
           </div>
 
