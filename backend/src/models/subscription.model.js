@@ -11,6 +11,10 @@ channel:{
     type:Schema.Types.ObjectId, // the channel being subscribed to
     ref:"User",
     required:true
+},
+notificationsEnabled:{
+    type:Boolean,
+    default:true // Enable notifications by default when subscribing
 }
 },{timestamps:true})
 

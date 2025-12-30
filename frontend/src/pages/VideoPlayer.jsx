@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../utils/api'
-import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Gauge, Bookmark } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Gauge, Bookmark, Bell, BellOff } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 import BookmarkModal from '../components/BookmarkModal'
@@ -31,6 +31,7 @@ const VideoPlayer = () => {
   const [editingContent, setEditingContent] = useState('')
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [subBusy, setSubBusy] = useState(false)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(1)
@@ -62,14 +63,6 @@ const VideoPlayer = () => {
       setDislikeCount(videoData.dislikeCount || 0)
       setIsLiked(videoData.isLiked || false)
       setIsDisliked(videoData.isDisliked || false)
-      if (videoData.owner?._id && user?._id) {
-        try {
-          const subRes = await api.get(`/user/c/${videoData.owner.username}`)
-          setIsSubscribed(subRes.data.data.isSubscribed || false)
-        } catch (err) {
-          console.warn('Subscription check failed', err)
-        }
-      }
     } catch (error) {
       console.error('Error fetching video:', error)
       toast.error('Failed to load video')
@@ -77,6 +70,29 @@ const VideoPlayer = () => {
       setLoading(false)
     }
   }
+
+  // Separate effect to fetch subscription status when video or user changes
+  useEffect(() => {
+    const fetchSubscriptionStatus = async () => {
+      if (!isAuthenticated || !video?.owner?._id) return
+      if (user?._id === video.owner._id) return
+
+      try {
+        const res = await api.get(
+          `/subscriptions/status/${video.owner._id}`
+        )
+        setIsSubscribed(res.data.data.isSubscribed)
+        setNotificationsEnabled(res.data.data.notificationsEnabled)
+      } catch (err) {
+        console.error('Subscription status failed', err)
+        setIsSubscribed(false)
+        setNotificationsEnabled(false)
+      }
+    }
+
+    fetchSubscriptionStatus()
+  }, [video?.owner?._id, user?._id, isAuthenticated])
+
 
   const fetchComments = async (page = 1) => {
     if (!videoId) return
@@ -295,9 +311,13 @@ const VideoPlayer = () => {
     requireAuth(async () => {
       try {
         setSubBusy(true)
-        await api.post(`/subscriptions/toggle/${video.owner._id}`)
-        setIsSubscribed((prev) => !prev)
-        toast.success(isSubscribed ? 'Unsubscribed' : 'Subscribed')
+        const response = await api.post(`/subscriptions/toggle/${video.owner._id}`)
+        const { isSubscribed: newSubscriptionStatus } = response.data.data
+        setIsSubscribed(newSubscriptionStatus)
+        if (newSubscriptionStatus) {
+          setNotificationsEnabled(true)
+        }
+        toast.success(newSubscriptionStatus ? 'Subscribed' : 'Unsubscribed')
       } catch (err) {
         const msg = err.response?.data?.message || 'Subscription failed'
         toast.error(msg)
@@ -305,6 +325,21 @@ const VideoPlayer = () => {
         setSubBusy(false)
       }
     })
+  }
+
+  const onToggleNotifications = async () => {
+    if (!video?.owner?._id) return
+    try {
+      const newNotificationState = !notificationsEnabled
+      await api.patch(`/subscriptions/notifications/${video.owner._id}`, {
+        notificationsEnabled: newNotificationState
+      })
+      setNotificationsEnabled(newNotificationState)
+      toast.success(newNotificationState ? 'Notifications enabled' : 'Notifications disabled')
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to update notification settings'
+      toast.error(msg)
+    }
   }
 
   const onShare = () => {
@@ -679,30 +714,56 @@ const VideoPlayer = () => {
                 {video.description}
               </p>
             </div>
-            {isAuthenticated ? (
-              isOwnChannel ? (
-                <span className="px-6 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border">
-                  Your channel
-                </span>
+            <div className="flex items-center gap-3">
+              {isAuthenticated ? (
+                isOwnChannel ? (
+                  <span className="px-6 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border">
+                    Your channel
+                  </span>
+                ) : (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={onToggleSubscribe}
+                      disabled={subBusy}
+                      className={`px-6 py-2 rounded-full font-medium transition-colors ${isSubscribed ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'bg-red-600 text-white hover:bg-red-700'}`}
+                    >
+                      {subBusy ? 'Loading...' : isSubscribed ? 'Subscribed' : 'Subscribe'}
+                    </motion.button>
+                    
+                    {isSubscribed && (
+                      <motion.button
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={onToggleNotifications}
+                        className={`p-2 rounded-full transition-all duration-300 ${
+                          notificationsEnabled
+                            ? 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50'
+                            : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                        title={notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
+                      >
+                        {notificationsEnabled ? (
+                          <Bell size={18} className="text-red-600 dark:text-red-400" />
+                        ) : (
+                          <BellOff size={18} className="text-gray-600 dark:text-gray-400" />
+                        )}
+                      </motion.button>
+                    )}
+                  </>
+                )
               ) : (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onToggleSubscribe}
-                  disabled={subBusy}
-                  className={`px-6 py-2 rounded-full font-medium transition-colors ${isSubscribed ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'bg-red-600 text-white hover:bg-red-700'}`}
+                <Link
+                  to="/login"
+                  className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium"
                 >
-                  {subBusy ? 'Loading...' : isSubscribed ? 'Subscribed' : 'Subscribe'}
-                </motion.button>
-              )
-            ) : (
-              <Link
-                to="/login"
-                className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium"
-              >
-                Sign in to subscribe
-              </Link>
-            )}
+                  Sign in to subscribe
+                </Link>
+              )}
+            </div>
           </div>
 
           <div className="mt-6">

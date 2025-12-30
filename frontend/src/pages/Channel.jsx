@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
-import { Play, Users, Clock, Eye } from 'lucide-react'
+import { Play, Users, Clock, Eye, Bell, BellOff } from 'lucide-react'
 import api from '../utils/api'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
@@ -19,6 +19,7 @@ const Channel = () => {
   const [videoCount, setVideoCount] = useState(0)
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const username = useMemo(() => (channelId === 'me' ? user?.username : channelId), [channelId, user?.username])
 
   useEffect(() => {
@@ -31,6 +32,17 @@ const Channel = () => {
         const ch = data.data
         console.log('Fetched channel data:', { isSubscribed: ch.isSubscribed, subscribersCount: ch.subscribersCount })
         setChannel(ch)
+        
+        // Fetch notification status if subscribed
+        if (ch.isSubscribed && user?._id && ch._id !== user._id) {
+          try {
+            const subStatus = await api.get(`/subscriptions/status/${ch._id}`)
+            setNotificationsEnabled(subStatus.data.data.notificationsEnabled)
+          } catch (err) {
+            console.warn('Failed to fetch notification status', err)
+          }
+        }
+        
         try {
           const res = await api.get('/videos', { params: { userId: ch._id, limit: 1 } })
           const total = res.data?.data?.totalDocs ?? (res.data?.data?.docs?.length || 0)
@@ -46,7 +58,7 @@ const Channel = () => {
       }
     }
     fetchChannel()
-  }, [username])
+  }, [username, user?._id])
 
   useEffect(() => {
     if (!channel?._id) return
@@ -76,6 +88,11 @@ const Channel = () => {
           isSubscribed: isSubscribed,
           subscribersCount: Math.max(0, (prev?.subscribersCount || 0) + (isSubscribed ? 1 : -1)),
         }))
+        
+        if (isSubscribed) {
+          setNotificationsEnabled(true)
+        }
+        
         toast.success(isSubscribed ? 'Subscribed' : 'Unsubscribed')
         console.log('Subscription toggled, new status:', isSubscribed)
       } catch (err) {
@@ -83,6 +100,21 @@ const Channel = () => {
         toast.error(msg)
       }
     })
+  }
+
+  const toggleNotifications = async () => {
+    if (!channel?._id) return
+    try {
+      const newNotificationState = !notificationsEnabled
+      await api.patch(`/subscriptions/notifications/${channel._id}`, {
+        notificationsEnabled: newNotificationState
+      })
+      setNotificationsEnabled(newNotificationState)
+      toast.success(newNotificationState ? 'Notifications enabled' : 'Notifications disabled')
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to update notification settings'
+      toast.error(msg)
+    }
   }
 
   if (loading) {
@@ -172,7 +204,7 @@ const Channel = () => {
               </div>
 
               {/* Subscribe Button */}
-              <div className="w-full sm:w-auto">
+              <div className="w-full sm:w-auto flex items-center gap-3">
                 {isAuthenticated ? (
                   isOwnChannel ? (
                     <motion.span 
@@ -182,18 +214,42 @@ const Channel = () => {
                       Your channel
                     </motion.span>
                   ) : (
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={toggleSubscription}
-                      className={`w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 ${
-                        channel.isSubscribed 
-                          ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700' 
-                          : 'btn-gradient text-white'
-                      }`}
-                    >
-                      {channel.isSubscribed ? '✓ Subscribed' : 'Subscribe'}
-                    </motion.button>
+                    <>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={toggleSubscription}
+                        className={`flex-1 sm:flex-initial px-8 py-3 rounded-xl font-bold text-sm shadow-lg transition-all duration-300 ${
+                          channel.isSubscribed 
+                            ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700' 
+                            : 'btn-gradient text-white'
+                        }`}
+                      >
+                        {channel.isSubscribed ? 'Subscribed' : 'Subscribe'}
+                      </motion.button>
+                      
+                      {channel.isSubscribed && (
+                        <motion.button
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={toggleNotifications}
+                          className={`p-3 rounded-xl transition-all duration-300 ${
+                            notificationsEnabled
+                              ? 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50'
+                              : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'
+                          }`}
+                          title={notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
+                        >
+                          {notificationsEnabled ? (
+                            <Bell size={20} className="text-red-600 dark:text-red-400" />
+                          ) : (
+                            <BellOff size={20} className="text-gray-600 dark:text-gray-400" />
+                          )}
+                        </motion.button>
+                      )}
+                    </>
                   )
                 ) : (
                   <Link 

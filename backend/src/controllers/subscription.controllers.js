@@ -169,8 +169,77 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, subscribedChannels, "Subscribed channels fetched successfully"))
 })
 
+const toggleNotifications = asyncHandler(async (req, res) => {
+    const { channelId } = req.params
+    const { notificationsEnabled } = req.body
+
+    if (!isValidObjectId(channelId)) {
+        throw new ApiError(400, "Invalid channel id")
+    }
+
+    if (typeof notificationsEnabled !== 'boolean') {
+        throw new ApiError(400, "notificationsEnabled must be a boolean")
+    }
+
+    const subscription = await Subscription.findOne({
+        subscriber: req.user._id,
+        channel: channelId
+    })
+
+    if (!subscription) {
+        throw new ApiError(404, "Subscription not found")
+    }
+
+    subscription.notificationsEnabled = notificationsEnabled
+    await subscription.save()
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            { notificationsEnabled: subscription.notificationsEnabled },
+            `Notifications ${notificationsEnabled ? 'enabled' : 'disabled'} successfully`
+        )
+    )
+})
+
+const getSubscriptionStatus = asyncHandler(async (req, res) => {
+    const { channelId } = req.params
+
+    if (!isValidObjectId(channelId)) {
+        throw new ApiError(400, "Invalid channel id")
+    }
+
+    const subscription = await Subscription.findOne({
+        subscriber: req.user._id,
+        channel: channelId
+    })
+
+    if (!subscription) {
+        return res.status(200).json(
+            new ApiResponse(
+                200,
+                { isSubscribed: false, notificationsEnabled: false },
+                "Not subscribed"
+            )
+        )
+    }
+
+    return res.status(200).json(
+        new ApiResponse(
+            200,
+            { 
+                isSubscribed: true, 
+                notificationsEnabled: subscription.notificationsEnabled 
+            },
+            "Subscription status fetched successfully"
+        )
+    )
+})
+
 export {
     toggleSubscription,
     getUserChannelSubscribers,
-    getSubscribedChannels
+    getSubscribedChannels,
+    toggleNotifications,
+    getSubscriptionStatus
 }

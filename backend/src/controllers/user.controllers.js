@@ -316,6 +316,9 @@ if(!username?.trim()){
  throw new ApiError(400, "username is missing")
 }
 
+// Convert user ID to ObjectId for proper comparison
+const currentUserId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null
+
 const channel = await User.aggregate([
 
   {
@@ -349,14 +352,11 @@ const channel = await User.aggregate([
       },
       isSubscribed:{
         $cond:{
-          if:{
-            $and:[
-              {$ne:[req.user?._id, null]},
-              {$in:[req.user?._id, "$subscribers.subscriber"]}
-            ]
+          if: {
+            $in: [currentUserId, "$subscribers.subscriber"]
           },
-          then:true,
-          else:false
+          then: true,
+          else: false
         }
       }
     },

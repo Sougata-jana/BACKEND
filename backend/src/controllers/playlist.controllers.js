@@ -267,7 +267,9 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
         throw new ApiError(403, "You can only remove videos from your own playlists")
     }
 
-    if (!playlist.videos.includes(videoId)) {
+    const videoExists = playlist.videos.some(video => video.toString() === videoId.toString())
+    
+    if (!videoExists) {
         throw new ApiError(400, "Video not found in playlist")
     }
 

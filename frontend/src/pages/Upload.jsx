@@ -8,7 +8,7 @@ import toast from 'react-hot-toast'
 const MAX_TITLE = 100
 const MAX_DESC = 1000
 const MAX_VIDEO_MB = 500 // adjust as needed
-const MAX_THUMB_MB = 5
+const MAX_THUMB_MB = 10
 
 const Upload = () => {
   const [title, setTitle] = useState('')
