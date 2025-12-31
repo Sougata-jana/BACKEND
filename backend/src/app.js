@@ -38,6 +38,7 @@ import tweetRoutes from './routes/tweet.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import notificationRoutes from './routes/notification.routes.js';
 import bookmarkRoutes from './routes/bookmark.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import { healthCheck } from './controllers/healthCheck.controllers.js';
 
 // routes declaration
@@ -53,6 +54,7 @@ app.use("/api/v1/tweets", tweetRoutes)
 app.use("/api/v1/dashboard", dashboardRoutes)
 app.use("/api/v1/notifications", notificationRoutes)
 app.use("/api/v1/bookmarks", bookmarkRoutes)
+app.use("/api/v1/admin", adminRoutes)
 
   // http://localhost:3000/api/v1/user/register
 

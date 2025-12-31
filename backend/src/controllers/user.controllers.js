@@ -124,13 +124,26 @@ const loginUser = asyncHandler(async(req, res)=>{
     throw new ApiError(404, "user not found")
   }
 
+  console.log('=== LOGIN DEBUG ===');
+  console.log('Received password:', password);
+  console.log('Stored password hash:', user.password);
+  console.log('User email:', user.email);
+  console.log('User username:', user.username);
+
  const ispasswordValid = await user.isPasswordCorrect(password)
+  console.log('Password validation result:', ispasswordValid);
   if(!ispasswordValid){
     throw new ApiError(401, "Invalid password")
   }
 
   const {refreshToken, accessToken} = await generatingRefreshAndAccessToken(user._id)
   const logedInUser = await User.findById(user._id).select("-password -refreshToken")
+
+  // Debug: Log the user object to verify isAdmin is included
+  console.log('=== LOGIN RESPONSE DEBUG ===');
+  console.log('User object:', JSON.stringify(logedInUser, null, 2));
+  console.log('isAdmin field:', logedInUser.isAdmin);
+  console.log('===========================');
 
   const option = {
     httpOnly: true,
@@ -426,6 +439,23 @@ const getWatchHistory = asyncHandler (async(req, res)=>{
   .status(200)
   .json(new ApiResponse(200, user[0]?.watchHistoryVideos || [], "Watch history fetched successfully"))
 })
+
+// Temporary endpoint to make yourself admin - REMOVE IN PRODUCTION
+const makeCurrentUserAdmin = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id)
+  
+  if (!user) {
+    throw new ApiError(404, "User not found")
+  }
+
+  user.isAdmin = true
+  await user.save({ validateBeforeSave: false })
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, { isAdmin: user.isAdmin }, "You are now an admin!"))
+})
+
 export {
   registerUser,
   loginUser,
@@ -437,5 +467,6 @@ export {
   updateUserAvatar,
   updateUserCoverImage,
   getUserChannelProfile,
-  getWatchHistory
+  getWatchHistory,
+  makeCurrentUserAdmin
 }

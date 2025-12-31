@@ -10,7 +10,8 @@ import {
     registerUser, 
     updateAccountDetails, 
     updateUserAvatar, 
-    updateUserCoverImage 
+    updateUserCoverImage,
+    makeCurrentUserAdmin
 } from "../controllers/user.controllers.js";
 import { upload } from "../middlewares/multer.middewares.js";
 import { verifyJWt } from "../middlewares/auth.middlewares.js";
@@ -43,4 +44,8 @@ router.route("/update-avatar").patch(verifyJWt, upload.single("avatar"), updateU
 router.route("/update-coverimage").patch(verifyJWt, upload.single("coverImage"), updateUserCoverImage)
 router.route("/c/:username").get(getUserChannelProfile)
 router.route("/watch-history").get(verifyJWt,getWatchHistory)
+
+// Temporary route to make yourself admin - REMOVE IN PRODUCTION
+router.route("/make-me-admin").post(verifyJWt, makeCurrentUserAdmin)
+
 export default router
