@@ -24,46 +24,68 @@ const Sidebar = () => {
   const isActive = (path) => location.pathname === path;
 
   return (
-    <div className="h-screen w-64 bg-gradient-to-b from-gray-900 to-gray-800 text-white flex flex-col shadow-2xl">
-      {/* Logo */}
-      <div className="p-6 border-b border-gray-700">
+    <div className="h-screen w-72 bg-linear-to-b from-[#0D1326] to-[#0A0F1E] text-white flex flex-col border-r border-white/5 relative">
+      
+      {/* Brand Section */}
+      <div className="px-6 py-10 border-b border-white/5">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-br from-blue-500 to-purple-500 p-2 rounded-xl shadow-lg">
-            <ShieldCheck className="w-8 h-8" />
+          <div className="relative">
+            <div className="p-3 bg-linear-to-br from-[#7C7CFF] to-[#2EE6D6] rounded-xl shadow-lg shadow-[#7C7CFF]/20">
+              <ShieldCheck className="w-7 h-7 text-white" />
+            </div>
           </div>
           <div>
-            <h1 className="text-xl font-bold">Admin Panel</h1>
-            <p className="text-xs text-gray-400">Management System</p>
+            <h1 className="text-xl font-bold text-white">Admin Panel</h1>
+            <p className="text-sm text-gray-400">Management Hub</p>
           </div>
         </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-2">
+      {/* Navigation Section */}
+      <nav className="flex-1 px-4 py-8 space-y-10 overflow-y-auto">
         {menuItems.map((item) => (
           <Link
             key={item.path}
             to={item.path}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+            className={`flex items-center gap-3 px-4 py-5 rounded-xl transition-all group ${
               isActive(item.path)
-                ? 'bg-gradient-to-r from-blue-500 to-purple-500 shadow-lg scale-105'
-                : 'hover:bg-gray-700/50 hover:translate-x-1'
+                ? 'bg-[#7C7CFF]/10 border border-[#7C7CFF]/30 shadow-lg shadow-[#7C7CFF]/10'
+                : 'hover:bg-white/5 border border-transparent'
             }`}
           >
-            <item.icon className="w-5 h-5" />
-            <span className="font-medium">{item.label}</span>
+            <div className={`p-3 rounded-lg transition-all ${
+              isActive(item.path) 
+                ? 'bg-[#7C7CFF]/20' 
+                : 'bg-white/5 group-hover:bg-white/10'
+            }`}>
+              <item.icon className={`w-6 h-6 transition-colors ${
+                isActive(item.path) ? 'text-[#7C7CFF]' : 'text-gray-400 group-hover:text-white'
+              }`} />
+            </div>
+            <span className={`font-medium text-lg transition-colors ${
+              isActive(item.path) ? 'text-white' : 'text-gray-400 group-hover:text-white'
+            }`}>
+              {item.label}
+            </span>
+            {isActive(item.path) && (
+              <div className="ml-auto">
+                <div className="w-1.5 h-1.5 bg-[#7C7CFF] rounded-full"></div>
+              </div>
+            )}
           </Link>
         ))}
       </nav>
 
-      {/* Logout */}
-      <div className="p-4 border-t border-gray-700">
+      {/* Logout Section */}
+      <div className="px-4 py-8 border-t border-white/5">
         <button
           onClick={logout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/10 hover:text-red-400 transition-all duration-200 group"
+          className="w-full flex items-center gap-3 px-4 py-5 rounded-xl bg-white/5 hover:bg-[#F43F5E]/10 border border-white/5 hover:border-[#F43F5E]/30 transition-all group"
         >
-          <LogOut className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-          <span className="font-medium">Logout</span>
+          <div className="p-3 bg-[#F43F5E]/10 rounded-lg border border-[#F43F5E]/20 group-hover:bg-[#F43F5E]/20 transition-all">
+            <LogOut className="w-6 h-6 text-[#F43F5E]" />
+          </div>
+          <span className="font-medium text-lg text-gray-400 group-hover:text-[#F43F5E] transition-colors">Logout</span>
         </button>
       </div>
     </div>

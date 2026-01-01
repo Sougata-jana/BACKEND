@@ -2,11 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../utils/api'
-import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Settings, Gauge, Bookmark, Bell, BellOff } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
-import BookmarkModal from '../components/BookmarkModal'
-import BookmarkList from '../components/BookmarkList'
 
 const VideoPlayer = () => {
   const { videoId } = useParams()
@@ -14,9 +12,7 @@ const VideoPlayer = () => {
   const [loading, setLoading] = useState(true)
   const [likeBusy, setLikeBusy] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
-  const [dislikeCount, setDislikeCount] = useState(0)
   const [isLiked, setIsLiked] = useState(false)
-  const [isDisliked, setIsDisliked] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -31,7 +27,6 @@ const VideoPlayer = () => {
   const [editingContent, setEditingContent] = useState('')
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [subBusy, setSubBusy] = useState(false)
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(1)
@@ -39,15 +34,6 @@ const VideoPlayer = () => {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [playbackRate, setPlaybackRate] = useState(1)
-  const [showSpeedMenu, setShowSpeedMenu] = useState(false)
-  const [showQualityMenu, setShowQualityMenu] = useState(false)
-  const [selectedQuality, setSelectedQuality] = useState('auto')
-  
-  // Bookmark states
-  const [bookmarks, setBookmarks] = useState([])
-  const [showBookmarkModal, setShowBookmarkModal] = useState(false)
-  const [showBookmarks, setShowBookmarks] = useState(false)
 
   useEffect(() => {
     fetchVideo()
@@ -60,9 +46,15 @@ const VideoPlayer = () => {
       const videoData = response.data.data
       setVideo(videoData)
       setLikeCount(videoData.likeCount || 0)
-      setDislikeCount(videoData.dislikeCount || 0)
       setIsLiked(videoData.isLiked || false)
-      setIsDisliked(videoData.isDisliked || false)
+      if (videoData.owner?._id && user?._id) {
+        try {
+          const subRes = await api.get(`/user/c/${videoData.owner.username}`)
+          setIsSubscribed(subRes.data.data.isSubscribed || false)
+        } catch (err) {
+          console.warn('Subscription check failed', err)
+        }
+      }
     } catch (error) {
       console.error('Error fetching video:', error)
       toast.error('Failed to load video')
@@ -70,29 +62,6 @@ const VideoPlayer = () => {
       setLoading(false)
     }
   }
-
-  // Separate effect to fetch subscription status when video or user changes
-  useEffect(() => {
-    const fetchSubscriptionStatus = async () => {
-      if (!isAuthenticated || !video?.owner?._id) return
-      if (user?._id === video.owner._id) return
-
-      try {
-        const res = await api.get(
-          `/subscriptions/status/${video.owner._id}`
-        )
-        setIsSubscribed(res.data.data.isSubscribed)
-        setNotificationsEnabled(res.data.data.notificationsEnabled)
-      } catch (err) {
-        console.error('Subscription status failed', err)
-        setIsSubscribed(false)
-        setNotificationsEnabled(false)
-      }
-    }
-
-    fetchSubscriptionStatus()
-  }, [video?.owner?._id, user?._id, isAuthenticated])
-
 
   const fetchComments = async (page = 1) => {
     if (!videoId) return
@@ -118,51 +87,8 @@ const VideoPlayer = () => {
   useEffect(() => {
     if (videoId) {
       fetchComments(1)
-      fetchBookmarks()
     }
   }, [videoId])
-
-  // Fetch bookmarks for this video
-  const fetchBookmarks = async () => {
-    if (!videoId || !isAuthenticated) return
-    try {
-      const { data } = await api.get(`/bookmarks/video/${videoId}`)
-      setBookmarks(data.data || [])
-    } catch (err) {
-      console.error('Failed to fetch bookmarks:', err)
-    }
-  }
-
-  // Save a new bookmark
-  const handleSaveBookmark = async (bookmarkData) => {
-    try {
-      const { data } = await api.post(`/bookmarks/video/${videoId}`, bookmarkData)
-      setBookmarks(prev => [...prev, data.data].sort((a, b) => a.timestamp - b.timestamp))
-      toast.success('Bookmark saved!')
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save bookmark')
-    }
-  }
-
-  // Delete a bookmark
-  const handleDeleteBookmark = async (bookmarkId) => {
-    try {
-      await api.delete(`/bookmarks/${bookmarkId}`)
-      setBookmarks(prev => prev.filter(b => b._id !== bookmarkId))
-      toast.success('Bookmark deleted')
-    } catch (err) {
-      toast.error('Failed to delete bookmark')
-    }
-  }
-
-  // Jump to bookmark timestamp
-  const handleJumpToBookmark = (timestamp) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = timestamp
-      videoRef.current.play()
-      setShowBookmarks(false)
-    }
-  }
 
   useEffect(() => {
     const video = videoRef.current
@@ -255,17 +181,6 @@ const VideoPlayer = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const changePlaybackRate = (rate) => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = rate
-      setPlaybackRate(rate)
-      setShowSpeedMenu(false)
-    }
-  }
-
-  const speedOptions = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2]
-  const qualityOptions = ['auto', '1080p', '720p', '480p', '360p', '240p']
-
   const onToggleLike = () => {
     requireAuth(async () => {
       if (!video) return
@@ -273,32 +188,10 @@ const VideoPlayer = () => {
         setLikeBusy(true)
         const { data } = await api.post(`/likes/toggle/v/${video._id}`)
         setIsLiked(data.data.isLiked)
-        setIsDisliked(false)
         setLikeCount(data.data.likeCount || 0)
-        setDislikeCount(data.data.dislikeCount || 0)
         toast.success(data.data.isLiked ? 'Liked' : 'Unliked')
       } catch (err) {
         const msg = err.response?.data?.message || 'Failed to toggle like'
-        toast.error(msg)
-      } finally {
-        setLikeBusy(false)
-      }
-    })
-  }
-
-  const onToggleDislike = () => {
-    requireAuth(async () => {
-      if (!video) return
-      try {
-        setLikeBusy(true)
-        const { data } = await api.post(`/likes/toggle/dislike/v/${video._id}`)
-        setIsDisliked(data.data.isDisliked)
-        setIsLiked(false)
-        setLikeCount(data.data.likeCount || 0)
-        setDislikeCount(data.data.dislikeCount || 0)
-        toast.success(data.data.isDisliked ? 'Disliked' : 'Removed dislike')
-      } catch (err) {
-        const msg = err.response?.data?.message || 'Failed to toggle dislike'
         toast.error(msg)
       } finally {
         setLikeBusy(false)
@@ -311,13 +204,9 @@ const VideoPlayer = () => {
     requireAuth(async () => {
       try {
         setSubBusy(true)
-        const response = await api.post(`/subscriptions/toggle/${video.owner._id}`)
-        const { isSubscribed: newSubscriptionStatus } = response.data.data
-        setIsSubscribed(newSubscriptionStatus)
-        if (newSubscriptionStatus) {
-          setNotificationsEnabled(true)
-        }
-        toast.success(newSubscriptionStatus ? 'Subscribed' : 'Unsubscribed')
+        await api.post(`/subscriptions/toggle/${video.owner._id}`)
+        setIsSubscribed((prev) => !prev)
+        toast.success(isSubscribed ? 'Unsubscribed' : 'Subscribed')
       } catch (err) {
         const msg = err.response?.data?.message || 'Subscription failed'
         toast.error(msg)
@@ -325,21 +214,6 @@ const VideoPlayer = () => {
         setSubBusy(false)
       }
     })
-  }
-
-  const onToggleNotifications = async () => {
-    if (!video?.owner?._id) return
-    try {
-      const newNotificationState = !notificationsEnabled
-      await api.patch(`/subscriptions/notifications/${video.owner._id}`, {
-        notificationsEnabled: newNotificationState
-      })
-      setNotificationsEnabled(newNotificationState)
-      toast.success(newNotificationState ? 'Notifications enabled' : 'Notifications disabled')
-    } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to update notification settings'
-      toast.error(msg)
-    }
   }
 
   const onShare = () => {
@@ -446,47 +320,45 @@ const VideoPlayer = () => {
           />
 
           {!isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/40 cursor-pointer" onClick={togglePlay}>
+            <div className="absolute inset-0 flex items-center justify-center bg-black/30 cursor-pointer" onClick={togglePlay}>
               <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center text-white shadow-2xl border-4 border-white/20"
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                className="w-20 h-20 bg-black/70 rounded-full flex items-center justify-center text-white shadow-lg"
               >
-                <Play size={48} className="ml-2 fill-white" />
+                <Play size={40} className="ml-2" />
               </motion.div>
             </div>
           )}
 
           {isPlaying && (
-            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 cursor-pointer" onClick={togglePlay}>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10 cursor-pointer" onClick={togglePlay}>
               <motion.button
-                whileHover={{ scale: 1.15 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-20 h-20 bg-black/80 rounded-full flex items-center justify-center text-white shadow-2xl border-2 border-white/30"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="w-16 h-16 bg-black/70 rounded-full flex items-center justify-center text-white"
               >
-                <Pause size={36} />
+                <Pause size={32} />
               </motion.button>
             </div>
           )}
 
-          <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/95 via-black/80 to-transparent p-4 transition-all duration-300 ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-            <div className="flex items-center gap-3 mb-3">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-2 mb-2">
               <motion.button
-                whileHover={{ scale: 1.15 }}
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                   e.stopPropagation()
                   togglePlay()
                 }}
-                className="text-white hover:text-red-400 transition-colors p-2 hover:bg-white/10 rounded-full"
+                className="text-white hover:text-red-500 transition-colors"
               >
-                {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
               </motion.button>
 
               <div
-                className="flex-1 relative h-2 bg-white/20 rounded-full cursor-pointer group/seek hover:h-2.5 transition-all"
+                className="flex-1 relative h-1.5 bg-white/30 rounded-full cursor-pointer group/seek"
                 onClick={(e) => {
                   e.stopPropagation()
                   handleSeek(e)
@@ -497,23 +369,23 @@ const VideoPlayer = () => {
                   style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                 />
                 <div
-                  className="absolute top-1/2 -translate-y-1/2 w-4 h-4 bg-red-600 rounded-full -ml-2 opacity-0 group-hover/seek:opacity-100 transition-opacity shadow-lg border-2 border-white"
+                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full -ml-1.5 opacity-0 group-hover/seek:opacity-100 transition-opacity"
                   style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
                 />
               </div>
 
-              <span className="text-white text-sm font-medium min-w-[110px] text-right">{formatTime(currentTime)} / {formatTime(duration)}</span>
+              <span className="text-white text-xs min-w-[100px] text-right">{formatTime(currentTime)} / {formatTime(duration)}</span>
 
               <motion.button
-                whileHover={{ scale: 1.15 }}
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleMute()
                 }}
-                className="text-white hover:text-red-400 transition-colors p-2 hover:bg-white/10 rounded-full"
+                className="text-white hover:text-red-500 transition-colors"
               >
-                {isMuted ? <VolumeX size={24} /> : <Volume2 size={24} />}
+                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
               </motion.button>
 
               <input
@@ -524,99 +396,19 @@ const VideoPlayer = () => {
                 value={isMuted ? 0 : volume}
                 onChange={handleVolumeChange}
                 onClick={(e) => e.stopPropagation()}
-                className="w-24 h-2 cursor-pointer accent-red-600"
-                style={{
-                  background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) ${(isMuted ? 0 : volume) * 100}%, rgba(255,255,255,0.3) 100%)`
-                }}
+                className="w-20 h-1 cursor-pointer"
               />
 
-              <div className="relative">
-                <motion.button
-                  whileHover={{ scale: 1.15 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowSpeedMenu(!showSpeedMenu)
-                    setShowQualityMenu(false)
-                  }}
-                  className="text-white hover:text-red-400 transition-colors flex items-center gap-1.5 px-3 py-2 hover:bg-white/10 rounded-lg"
-                >
-                  <Gauge size={22} />
-                  <span className="text-sm font-medium">{playbackRate}x</span>
-                </motion.button>
-                {showSpeedMenu && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-lg py-2 min-w-[140px] z-50 shadow-2xl border border-white/20">
-                    <div className="px-3 py-2 border-b border-white/20 mb-1">
-                      <p className="text-xs font-semibold text-white/80 uppercase">Playback Speed</p>
-                    </div>
-                    {speedOptions.map((speed) => (
-                      <button
-                        key={speed}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          changePlaybackRate(speed)
-                        }}
-                        className={`w-full px-4 py-2.5 text-left text-sm hover:bg-white/20 transition-colors flex items-center justify-between ${
-                          playbackRate === speed ? 'text-red-400 font-bold bg-white/10' : 'text-white'
-                        }`}
-                      >
-                        <span>{speed}x {speed === 1 && '(Normal)'}</span>
-                        {playbackRate === speed && <span className="text-red-400">✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="relative">
-                <motion.button
-                  whileHover={{ scale: 1.15 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowQualityMenu(!showQualityMenu)
-                    setShowSpeedMenu(false)
-                  }}
-                  className="text-white hover:text-red-400 transition-colors flex items-center gap-1.5 px-3 py-2 hover:bg-white/10 rounded-lg"
-                >
-                  <Settings size={22} />
-                  <span className="text-sm font-medium">{selectedQuality}</span>
-                </motion.button>
-                {showQualityMenu && (
-                  <div className="absolute bottom-full right-0 mb-2 bg-black/95 rounded-lg py-2 min-w-[140px] z-50 shadow-2xl border border-white/20">
-                    <div className="px-3 py-2 border-b border-white/20 mb-1">
-                      <p className="text-xs font-semibold text-white/80 uppercase">Quality</p>
-                    </div>
-                    {qualityOptions.map((quality) => (
-                      <button
-                        key={quality}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedQuality(quality)
-                          setShowQualityMenu(false)
-                        }}
-                        className={`w-full px-4 py-2.5 text-left text-sm hover:bg-white/20 transition-colors flex items-center justify-between ${
-                          selectedQuality === quality ? 'text-red-400 font-bold bg-white/10' : 'text-white'
-                        }`}
-                      >
-                        <span>{quality}</span>
-                        {selectedQuality === quality && <span className="text-red-400">✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
               <motion.button
-                whileHover={{ scale: 1.15 }}
+                whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={(e) => {
                   e.stopPropagation()
                   toggleFullscreen()
                 }}
-                className="text-white hover:text-red-400 transition-colors p-2 hover:bg-white/10 rounded-full"
+                className="text-white hover:text-red-500 transition-colors"
               >
-                {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
+                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
               </motion.button>
             </div>
           </div>
@@ -648,18 +440,6 @@ const VideoPlayer = () => {
                 <Share2 size={18} />
                 Share
               </motion.button>
-              {isAuthenticated && (
-                <motion.button
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setShowBookmarkModal(true)}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm"
-                  title="Bookmark this moment"
-                >
-                  <Bookmark size={18} />
-                  Bookmark
-                </motion.button>
-              )}
               <motion.button
                 whileHover={{ scale: likeBusy ? 1 : 1.03 }}
                 whileTap={{ scale: likeBusy ? 1 : 0.97 }}
@@ -674,15 +454,10 @@ const VideoPlayer = () => {
                 whileHover={{ scale: likeBusy ? 1 : 1.03 }}
                 whileTap={{ scale: likeBusy ? 1 : 0.97 }}
                 disabled={likeBusy}
-                onClick={onToggleDislike}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm ${
-                  isDisliked
-                    ? 'bg-gray-600 text-white hover:bg-gray-700'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'
-                }`}
+                onClick={() => toast.info('Dislike feature coming soon')}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
               >
                 <ThumbsDown size={18} />
-                {dislikeCount > 0 && dislikeCount.toLocaleString()}
               </motion.button>
             </div>
           </div>
@@ -714,56 +489,30 @@ const VideoPlayer = () => {
                 {video.description}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              {isAuthenticated ? (
-                isOwnChannel ? (
-                  <span className="px-6 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border">
-                    Your channel
-                  </span>
-                ) : (
-                  <>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={onToggleSubscribe}
-                      disabled={subBusy}
-                      className={`px-6 py-2 rounded-full font-medium transition-colors ${isSubscribed ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'bg-red-600 text-white hover:bg-red-700'}`}
-                    >
-                      {subBusy ? 'Loading...' : isSubscribed ? 'Subscribed' : 'Subscribe'}
-                    </motion.button>
-                    
-                    {isSubscribed && (
-                      <motion.button
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={onToggleNotifications}
-                        className={`p-2 rounded-full transition-all duration-300 ${
-                          notificationsEnabled
-                            ? 'bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50'
-                            : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
-                        }`}
-                        title={notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
-                      >
-                        {notificationsEnabled ? (
-                          <Bell size={18} className="text-red-600 dark:text-red-400" />
-                        ) : (
-                          <BellOff size={18} className="text-gray-600 dark:text-gray-400" />
-                        )}
-                      </motion.button>
-                    )}
-                  </>
-                )
+            {isAuthenticated ? (
+              isOwnChannel ? (
+                <span className="px-6 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border">
+                  Your channel
+                </span>
               ) : (
-                <Link
-                  to="/login"
-                  className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium"
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={onToggleSubscribe}
+                  disabled={subBusy}
+                  className={`px-6 py-2 rounded-full font-medium transition-colors ${isSubscribed ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'bg-red-600 text-white hover:bg-red-700'}`}
                 >
-                  Sign in to subscribe
-                </Link>
-              )}
-            </div>
+                  {subBusy ? 'Loading...' : isSubscribed ? 'Subscribed' : 'Subscribe'}
+                </motion.button>
+              )
+            ) : (
+              <Link
+                to="/login"
+                className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium"
+              >
+                Sign in to subscribe
+              </Link>
+            )}
           </div>
 
           <div className="mt-6">
@@ -793,12 +542,12 @@ const VideoPlayer = () => {
                   <img src={user?.avatar} alt={user?.fullname} className="w-10 h-10 rounded-full object-cover" />
                   <div className="flex-1">
                     <textarea
-                      className="w-full dark:text-white rounded-md border text-black border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 min-h-[70px] outline-none focus:ring-2 focus:ring-red-500"
+                      className="w-full rounded-md border text-black border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 min-h-[70px] outline-none focus:ring-2 focus:ring-red-500"
                       placeholder="Add a public comment..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                     />
-                    <div className="mt-2 dark:text-white text-gray-800 flex items-center justify-end gap-2">
+                    <div className="mt-2 flex items-center justify-end gap-2">
                       <button type="button" onClick={() => setNewComment('')} className="px-4 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800">
                         Cancel
                       </button>
@@ -1070,60 +819,6 @@ const VideoPlayer = () => {
               </form>
             </div>
           </div>
-        )}
-
-        {/* Bookmark Modal */}
-        <BookmarkModal
-          isOpen={showBookmarkModal}
-          onClose={() => setShowBookmarkModal(false)}
-          onSave={handleSaveBookmark}
-          currentTime={currentTime}
-          videoTitle={video?.title}
-        />
-
-        {/* Bookmarks Sidebar */}
-        {showBookmarks && isAuthenticated && (
-          <div className="fixed right-0 top-0 h-full w-80 bg-white dark:bg-gray-900 shadow-2xl z-40 overflow-y-auto">
-            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b dark:border-gray-700 p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Bookmark className="w-5 h-5 text-blue-500" />
-                <h3 className="font-semibold text-gray-900 dark:text-white">
-                  Bookmarks ({bookmarks.length})
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowBookmarks(false)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="p-4">
-              <BookmarkList
-                bookmarks={bookmarks}
-                onJumpTo={handleJumpToBookmark}
-                onDelete={handleDeleteBookmark}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Toggle Bookmarks Button (Fixed) */}
-        {isAuthenticated && bookmarks.length > 0 && !showBookmarks && (
-          <motion.button
-            initial={{ x: 100 }}
-            animate={{ x: 0 }}
-            onClick={() => setShowBookmarks(true)}
-            className="fixed right-4 bottom-24 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 z-30"
-            title={`View ${bookmarks.length} bookmarks`}
-          >
-            <Bookmark className="w-5 h-5" />
-            {bookmarks.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {bookmarks.length}
-              </span>
-            )}
-          </motion.button>
         )}
       </motion.div>
     </div>
