@@ -88,64 +88,229 @@ const MyVideos = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">My Videos</h1>
-        <Link to="/upload" className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">
-          <UploadIcon size={18} /> Upload new
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+      >
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
+            My Videos
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Manage your uploaded content
+          </p>
+        </div>
+        <Link to="/upload">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg shadow-lg hover:shadow-xl font-medium"
+          >
+            <UploadIcon size={18} /> Upload New
+          </motion.button>
         </Link>
-      </div>
+      </motion.div>
 
+      {/* Edit Modal */}
       {editingId && (
-        <div className="mb-6 p-4 border rounded-lg  bg-gray-50 dark:bg-gray-800">
-          <h2 className="font-semibold  mb-3">Edit video</h2>
-          <div className="space-y-3">
-            <input className="input" value={editTitle} onChange={e => setEditTitle(e.target.value)} placeholder="Title" />
-            <textarea className="input min-h-[120px]" value={editDescription} onChange={e => setEditDescription(e.target.value)} placeholder="Description" />
-            <div className="flex gap-2">
-              <button onClick={saveEdit} className="px-4 py-2 bg-red-600 text-white rounded-lg">Save</button>
-              <button onClick={() => setEditingId(null)} className="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-lg">Cancel</button>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="mb-8 p-6 rounded-xl border border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm shadow-xl"
+        >
+          <h2 className="text-xl font-semibold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent mb-4">
+            ✏️ Edit Video
+          </h2>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Title</label>
+              <input
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                value={editTitle}
+                onChange={e => setEditTitle(e.target.value)}
+                placeholder="Video title..."
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description</label>
+              <textarea
+                className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 min-h-[120px] outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
+                value={editDescription}
+                onChange={e => setEditDescription(e.target.value)}
+                placeholder="Video description..."
+              />
+            </div>
+            <div className="flex gap-3">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={saveEdit}
+                className="flex-1 px-5 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg font-medium shadow-lg hover:shadow-xl"
+              >
+                💾 Save Changes
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setEditingId(null)}
+                className="flex-1 px-5 py-3 border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
+              >
+                Cancel
+              </motion.button>
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
 
+      {/* Empty State */}
       {videos.length === 0 && !loading && (
-        <div className="text-center py-16">
-          <p className="text-gray-600 dark:text-gray-400">No videos yet. Upload your first video.</p>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-20"
+        >
+          <motion.div
+            animate={{ scale: [1, 1.1, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-5xl mb-6 shadow-2xl"
+          >
+            🎬
+          </motion.div>
+          <p className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
+            No videos yet
+          </p>
+          <p className="text-gray-500 dark:text-gray-400 mb-6">
+            Upload your first video to get started
+          </p>
+          <Link to="/upload">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg shadow-lg font-medium"
+            >
+              <UploadIcon size={18} /> Upload Now
+            </motion.button>
+          </Link>
+        </motion.div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {videos.map(v => (
-          <div key={v._id} className="border rounded-lg overflow-hidden bg-white dark:bg-gray-900">
-            <Link to={`/video/${v._id}`} className="block relative aspect-video bg-gray-200 dark:bg-gray-700">
-              {v.thumbnail && <img src={v.thumbnail} alt={v.title} className="w-full h-full object-cover" />}
-              <div className="absolute top-2 left-2 inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-black/70 text-white">
-                {v.isPublished ? (<><Globe size={12} /> Published</>) : (<><Lock size={12} /> Unpublished</>)}
+      {/* Videos Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {videos.map((v, index) => (
+          <motion.div
+            key={v._id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+            className="group rounded-xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-lg hover:shadow-2xl transition-all duration-300"
+          >
+            {/* Thumbnail */}
+            <Link to={`/video/${v._id}`} className="block relative aspect-video bg-gray-200 dark:bg-gray-700 overflow-hidden">
+              {v.thumbnail && (
+                <img
+                  src={v.thumbnail}
+                  alt={v.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                />
+              )}
+              {/* Status Badge */}
+              <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-md shadow-lg">
+                {v.isPublished ? (
+                  <div className="flex items-center gap-1.5 bg-green-500/90 text-white">
+                    <Globe size={12} /> Published
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 bg-gray-800/90 text-white">
+                    <Lock size={12} /> Unpublished
+                  </div>
+                )}
+              </div>
+              {/* Hover Overlay */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                <Eye size={40} className="text-white" />
               </div>
             </Link>
-            <div className="p-3 space-y-2">
-              <h3 className="font-semibold line-clamp-2">{v.title}</h3>
-              <div className="flex gap-2">
-                <button onClick={() => startEdit(v)} className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded bg-gray-500 dark:bg-gray-700"><Edit size={14} /> Edit</button>
-                <button onClick={() => togglePublish(v._id)} className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded bg-gray-500 dark:bg-gray-700">
-                  {v.isPublished ? 'Unpublish' : 'Publish'}
-                </button>
-                <button onClick={() => deleteVideo(v._id)} className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded bg-red-600 text-white"><Trash2 size={14} /> Delete</button>
-                <Link to={`/video/${v._id}`} className="inline-flex items-center gap-1 px-3 py-1 text-sm rounded bg-gray-500 dark:bg-gray-700"><Eye size={14} /> View</Link>
+
+            {/* Content */}
+            <div className="p-4 space-y-3">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 line-clamp-2 text-base group-hover:text-red-500 transition-colors">
+                {v.title}
+              </h3>
+              
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => startEdit(v)}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-blue-500 hover:bg-blue-600 text-white shadow-md transition-all"
+                >
+                  <Edit size={13} /> Edit
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => togglePublish(v._id)}
+                  className={`inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg shadow-md transition-all ${
+                    v.isPublished
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-green-500 hover:bg-green-600 text-white'
+                  }`}
+                >
+                  {v.isPublished ? (
+                    <>
+                      <Lock size={13} /> Unpublish
+                    </>
+                  ) : (
+                    <>
+                      <Globe size={13} /> Publish
+                    </>
+                  )}
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => deleteVideo(v._id)}
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-red-500 hover:bg-red-600 text-white shadow-md transition-all"
+                >
+                  <Trash2 size={13} /> Delete
+                </motion.button>
+                <Link to={`/video/${v._id}`}>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg bg-gray-600 hover:bg-gray-700 text-white shadow-md transition-all"
+                  >
+                    <Eye size={13} /> View
+                  </motion.button>
+                </Link>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
+      {/* Load More Button */}
       {videos.length > 0 && (
-        <div className="flex justify-center mt-8">
-          <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} disabled={loading} onClick={() => fetchMyVideos(page + 1)} className="px-6 py-3 bg-gray-500 dark:bg-gray-700 rounded-lg disabled:opacity-50">
-            {loading ? 'Loading…' : 'Load more'}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex justify-center mt-10"
+        >
+          <motion.button
+            whileHover={{ scale: loading ? 1 : 1.05 }}
+            whileTap={{ scale: loading ? 1 : 0.95 }}
+            disabled={loading}
+            onClick={() => fetchMyVideos(page + 1)}
+            className="px-8 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg shadow-lg hover:shadow-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? '⏳ Loading...' : '📥 Load More'}
           </motion.button>
-        </div>
+        </motion.div>
       )}
     </div>
   )

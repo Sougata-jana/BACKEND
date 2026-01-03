@@ -19,6 +19,7 @@ const Upload = () => {
   const [thumbPreview, setThumbPreview] = useState('')
   const [loading, setLoading] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false)
   const navigate = useNavigate()
   const { requireAuth } = useAuth()
 
@@ -100,6 +101,7 @@ const Upload = () => {
       if (!description.trim()) return toast.error('Description is required')
       if (!videoFile) return toast.error('Please select a video file')
       if (!thumbnail) return toast.error('Please select a thumbnail')
+      if (!acceptedPolicy) return toast.error('Please accept the content policy to continue')
 
       try {
         setLoading(true)
@@ -118,11 +120,17 @@ const Upload = () => {
             setProgress(pct)
           }
         })
-        toast.success('Video uploaded successfully')
+        toast.success('Video uploaded successfully! Our system will review it shortly.')
         navigate(`/video/${data.data._id}`)
       } catch (err) {
         const msg = err.response?.data?.message || 'Upload failed'
-        toast.error(msg)
+        
+        // Check if content moderation failed
+        if (msg.includes('inappropriate') || msg.includes('adult') || msg.includes('18+')) {
+          toast.error('🚫 Upload blocked: This video contains inappropriate content', { duration: 5000 })
+        } else {
+          toast.error(msg)
+        }
       } finally {
         setLoading(false)
       }
@@ -130,29 +138,74 @@ const Upload = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-gray-100">Upload Video</h1>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-red-500 to-pink-500 bg-clip-text text-transparent">
+          Upload Video
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">Share your content with the world</p>
+      </motion.div>
 
-      <form onSubmit={onSubmit} className="grid gap-6 md:grid-cols-5">
+      <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-5">
+        {/* Content Policy Warning Banner */}
+        <div className="lg:col-span-5">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 rounded-xl border-2 border-amber-500 dark:border-amber-600 bg-amber-50 dark:bg-amber-900/20"
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div className="flex-1">
+                <h3 className="font-bold text-amber-900 dark:text-amber-200 mb-2">Content Policy Notice</h3>
+                <p className="text-sm text-amber-800 dark:text-amber-300 mb-3">
+                  <strong>18+ Adult Content is STRICTLY PROHIBITED.</strong> Our AI system automatically detects inappropriate content including:
+                </p>
+                <ul className="text-sm text-amber-800 dark:text-amber-300 space-y-1 mb-3 ml-4 list-disc">
+                  <li>Sexual or explicit content</li>
+                  <li>Nudity or sexually suggestive material</li>
+                  <li>Violence or graphic content</li>
+                  <li>Hate speech or harassment</li>
+                </ul>
+                <p className="text-sm text-amber-800 dark:text-amber-300 font-semibold">
+                  ⛔ Videos violating these policies will be automatically blocked and your account may be suspended.
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
         {/* Left: files */}
-        <div className="md:col-span-3 space-y-6">
+        <div className="lg:col-span-3 space-y-6">
           {/* Video picker */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={onVideoDrop}
-            className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 sm:p-6 bg-white dark:bg-gray-900"
+            className="group relative rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 p-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:border-red-400 dark:hover:border-red-500 transition-all duration-300"
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">Video file</label>
-                <p className="text-xs text-gray-500">MP4, WebM or MOV. Max {MAX_VIDEO_MB}MB</p>
+                <label className="block text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                  🎬 Video File
+                </label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  MP4, WebM or MOV • Max {MAX_VIDEO_MB}MB
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => videoInputRef.current?.click()}
-                className="px-3 py-1.5 rounded-md text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-red-500 to-pink-500 text-white hover:shadow-lg hover:scale-105 transition-all duration-200"
               >
-                Choose file
+                Choose File
               </button>
               <input
                 ref={videoInputRef}
@@ -164,42 +217,70 @@ const Upload = () => {
             </div>
 
             {videoFile ? (
-              <div className="space-y-3">
-                <div className="aspect-video w-full bg-black/60 rounded overflow-hidden">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-3"
+              >
+                <div className="aspect-video w-full bg-black/80 rounded-lg overflow-hidden shadow-xl">
                   {videoPreview && (
                     <video src={videoPreview} controls className="w-full h-full object-contain" />
                   )}
                 </div>
-                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
-                  <span className="truncate">{videoFile.name}</span>
-                  <span>{formatBytes(videoFile.size)}</span>
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate flex-1">
+                    {videoFile.name}
+                  </span>
+                  <span className="text-sm font-semibold text-red-600 dark:text-red-400 ml-3">
+                    {formatBytes(videoFile.size)}
+                  </span>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-12 gap-3">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-3xl shadow-lg"
+                >
+                  🎬
+                </motion.div>
+                <div>
+                  <p className="text-base font-medium text-gray-700 dark:text-gray-300">
+                    Drag and drop your video here
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    or click "Choose File" to browse
+                  </p>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center text-center py-10 gap-2">
-                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500">🎬</div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Drag and drop your video here, or click Choose file</p>
-              </div>
             )}
-          </div>
+          </motion.div>
 
           {/* Thumbnail picker */}
-          <div
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={onThumbDrop}
-            className="rounded-lg border border-dashed border-gray-300 dark:border-gray-700 p-4 sm:p-6 bg-white dark:bg-gray-900"
+            className="group relative rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 p-6 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm hover:border-red-400 dark:hover:border-red-500 transition-all duration-300"
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 gap-3">
               <div>
-                <label className="block text-sm font-medium text-gray-900 dark:text-gray-100">Thumbnail</label>
-                <p className="text-xs text-gray-500">JPG or PNG. 16:9 recommended. Max {MAX_THUMB_MB}MB</p>
+                <label className="block text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                  🖼️ Thumbnail
+                </label>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  JPG or PNG • 16:9 recommended • Max {MAX_THUMB_MB}MB
+                </p>
               </div>
               <button
                 type="button"
                 onClick={() => thumbInputRef.current?.click()}
-                className="px-3 py-1.5 rounded-md text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-red-500 to-pink-500 text-white hover:shadow-lg hover:scale-105 transition-all duration-200"
               >
-                Choose file
+                Choose File
               </button>
               <input
                 ref={thumbInputRef}
@@ -211,82 +292,167 @@ const Upload = () => {
             </div>
 
             {thumbnail ? (
-              <div className="space-y-3">
-                <div className="aspect-video w-full bg-gray-100 dark:bg-gray-800 rounded overflow-hidden">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="space-y-3"
+              >
+                <div className="aspect-video w-full bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden shadow-xl">
                   {thumbPreview && (
                     <img src={thumbPreview} alt="thumbnail preview" className="w-full h-full object-cover" />
                   )}
                 </div>
-                <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
-                  <span className="truncate">{thumbnail.name}</span>
-                  <span>{formatBytes(thumbnail.size)}</span>
+                <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate flex-1">
+                    {thumbnail.name}
+                  </span>
+                  <span className="text-sm font-semibold text-red-600 dark:text-red-400 ml-3">
+                    {formatBytes(thumbnail.size)}
+                  </span>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center py-12 gap-3">
+                <motion.div
+                  animate={{ scale: [1, 1.1, 1] }}
+                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+                  className="w-16 h-16 rounded-full bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-3xl shadow-lg"
+                >
+                  🖼️
+                </motion.div>
+                <div>
+                  <p className="text-base font-medium text-gray-700 dark:text-gray-300">
+                    Drag and drop your thumbnail here
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                    or click "Choose File" to browse
+                  </p>
                 </div>
               </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center text-center py-10 gap-2">
-                <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500">🖼️</div>
-                <p className="text-sm text-gray-600 dark:text-gray-300">Drag and drop a thumbnail image here, or click Choose file</p>
-              </div>
             )}
-          </div>
+          </motion.div>
         </div>
 
         {/* Right: metadata */}
-        <div className="md:col-span-2 space-y-6">
-          <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4 sm:p-6 bg-white dark:bg-gray-900">
-            <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Title</label>
+        <div className="lg:col-span-2 space-y-6">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-xl border border-gray-200 dark:border-gray-800 p-5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm shadow-lg"
+          >
+            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              📝 Title
+            </label>
             <input
               value={title}
               onChange={handleTitleChange}
-              placeholder="Add a title that describes your video"
-              className="w-full text-black rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Add a catchy title for your video..."
+              className="w-full text-gray-900 dark:text-gray-100 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
               required
             />
-            <div className="mt-1 text-xs text-gray-500 text-right">{title.length}/{MAX_TITLE}</div>
-          </div>
+            <div className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400 text-right">
+              {title.length}/{MAX_TITLE}
+            </div>
+          </motion.div>
 
-          <div className="rounded-lg border border-gray-200 dark:border-gray-800 p-4 sm:p-6 bg-white dark:bg-gray-900">
-            <label className="block text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Description</label>
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-xl border border-gray-200 dark:border-gray-800 p-5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm shadow-lg"
+          >
+            <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              📄 Description
+            </label>
             <textarea
               value={description}
               onChange={handleDescChange}
-              placeholder="Tell viewers about your video"
-              className="w-full text-black rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 min-h-[140px] outline-none focus:ring-2 focus:ring-red-500"
+              placeholder="Tell viewers about your video..."
+              className="w-full text-gray-900 dark:text-gray-100 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 px-4 py-3 min-h-[160px] outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
               required
             />
-            <div className="mt-1 text-xs text-gray-500 text-right">{description.length}/{MAX_DESC}</div>
-          </div>
+            <div className="mt-2 text-xs font-medium text-gray-500 dark:text-gray-400 text-right">
+              {description.length}/{MAX_DESC}
+            </div>
+          </motion.div>
 
-          <div className="flex items-center gap-3">
-            <button
+          {/* Content Policy Checkbox */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.25 }}
+            className="rounded-xl border border-gray-200 dark:border-gray-800 p-5 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm shadow-lg"
+          >
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={acceptedPolicy}
+                onChange={(e) => setAcceptedPolicy(e.target.checked)}
+                className="mt-1 w-5 h-5 rounded border-gray-300 text-red-600 focus:ring-2 focus:ring-red-500 cursor-pointer"
+                required
+              />
+              <div className="flex-1">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100 group-hover:text-red-500 transition-colors">
+                  I confirm this video complies with content policies
+                </span>
+                <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                  By checking this, I certify that my video does not contain any adult, sexual, violent, or inappropriate content. I understand that violations may result in account suspension.
+                </p>
+              </div>
+            </label>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-3"
+          >
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               type="button"
               onClick={() => navigate('/my-videos')}
-              className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="flex-1 px-5 py-3 rounded-lg border-2 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-all"
               disabled={loading}
             >
               Cancel
-            </button>
+            </motion.button>
             <motion.button
-              whileHover={{ scale: loading ? 1 : 1.02 }}
-              whileTap={{ scale: loading ? 1 : 0.98 }}
+              whileHover={{ scale: loading ? 1 : 1.05 }}
+              whileTap={{ scale: loading ? 1 : 0.95 }}
               disabled={loading}
               type="submit"
-              className="px-5 py-2.5 bg-red-600 text-white rounded-md disabled:opacity-50"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              {loading ? 'Uploading…' : 'Upload'}
+              {loading ? '⏳ Uploading...' : '🚀 Upload Video'}
             </motion.button>
-          </div>
+          </motion.div>
 
           {loading && (
-            <div className="mt-2">
-              <div className="h-2 w-full bg-gray-200 dark:bg-gray-800 rounded">
-                <div
-                  className="h-2 bg-red-600 rounded transition-all"
-                  style={{ width: `${progress}%` }}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="p-4 rounded-xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm border border-gray-200 dark:border-gray-800"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Uploading...
+                </span>
+                <span className="text-sm font-bold text-red-600 dark:text-red-400">
+                  {progress}%
+                </span>
+              </div>
+              <div className="h-3 w-full bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  className="h-full bg-gradient-to-r from-red-500 to-pink-500 rounded-full shadow-lg"
+                  transition={{ duration: 0.3 }}
                 />
               </div>
-              <div className="mt-1 text-xs text-gray-500">{progress}%</div>
-            </div>
+            </motion.div>
           )}
         </div>
       </form>

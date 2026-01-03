@@ -18,7 +18,7 @@ const Layout = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-900 overflow-x-hidden w-full">
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -51,7 +51,7 @@ const Layout = () => {
       </div>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 w-full ${sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
         {/* Header */}
         <Header onMenuClick={toggleSidebar} />
 
@@ -68,12 +68,12 @@ const Layout = () => {
         </div>
 
         {/* Page content */}
-        <main className="flex-1">
+        <main className="flex-1 w-full">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="px-4 py-6 sm:px-6 lg:px-8"
+            className="px-3 py-4 sm:px-6 lg:px-8 w-full overflow-x-hidden"
           >
             <Outlet />
           </motion.div>

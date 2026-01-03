@@ -7,6 +7,7 @@ import { uploadCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import { moderateContent } from "../utils/contentModerator.js";
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
@@ -95,17 +96,79 @@ const publishAVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Thumbnail is required")
     }
 
+    // 🛡️ CONTENT MODERATION CHECK (FREE - No API keys needed)
+    console.log('🔍 Checking content for inappropriate material...');
+    
+    let requiresManualReview = false;
+    
+    // TEMPORARILY DISABLED: Text moderation to test AI moderation
+    // We'll rely only on Cloudinary AI for content analysis
+    console.log('⚠️  Text moderation disabled - relying on AI content analysis');
+    
+    // try {
+    //     const moderationResult = await moderateContent({
+    //         title,
+    //         description,
+    //         videoPath: videoLocalPath,
+    //         thumbnailPath: thumbnailLocalPath
+    //     });
+
+    //     if (!moderationResult.passed) {
+    //         // Delete uploaded files before rejecting
+    //         const fs = await import('fs');
+    //         if (fs.existsSync(videoLocalPath)) fs.unlinkSync(videoLocalPath);
+    //         if (fs.existsSync(thumbnailLocalPath)) fs.unlinkSync(thumbnailLocalPath);
+    //         
+    //         throw new ApiError(
+    //             403, 
+    //             `🚫 Upload blocked: ${moderationResult.reasons.join(' | ')}. Your content violates our community guidelines.`
+    //         );
+    //     }
+
+    //     // Check if requires manual review
+    //     requiresManualReview = moderationResult.requiresReview;
+    //     
+    //     if (requiresManualReview) {
+    //         console.log('⚠️  Video flagged for manual review - will be unpublished until approved');
+    //     } else {
+    //         console.log('✅ Content passed all moderation checks - auto-approved');
+    //     }
+    // } catch (error) {
+    //     if (error instanceof ApiError) {
+    //         throw error;
+    //     }
+    //     // If moderation service fails, require manual review for safety
+    //     console.error('⚠️ Moderation check failed:', error.message);
+    //     requiresManualReview = true;
+    // }
+
     const videoFile = await uploadCloudinary(videoLocalPath)
     const thumbnail = await uploadCloudinary(thumbnailLocalPath)
 
-    if (!videoFile) {
+    // 🤖 AI Content Analysis - Check if Cloudinary AI flagged inappropriate content
+    if (videoFile && videoFile.inappropriate) {
+        throw new ApiError(
+            403, 
+            `🚫 AI detected inappropriate content in your video: ${videoFile.message || 'Content violates community guidelines'}`
+        );
+    }
+
+    if (thumbnail && thumbnail.inappropriate) {
+        throw new ApiError(
+            403, 
+            `🚫 AI detected inappropriate content in your thumbnail: ${thumbnail.message || 'Image violates community guidelines'}`
+        );
+    }
+
+    if (!videoFile || videoFile.error) {
         throw new ApiError(400, "Video file upload failed")
     }
 
-    if (!thumbnail) {
+    if (!thumbnail || thumbnail.error) {
         throw new ApiError(400, "Thumbnail upload failed")
     }
 
+    // Create video with appropriate publish status
     const video = await Video.create({
         videoFile: videoFile.url,
         thumbnail: thumbnail.url,
@@ -113,7 +176,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
         description,
         duration: videoFile.duration || 0,
         owner: req.user._id,
-        isPublished: true
+        isPublished: !requiresManualReview  // Unpublish if needs review
     })
 
     const uploadedVideo = await Video.findById(video._id)
@@ -122,7 +185,11 @@ const publishAVideo = asyncHandler(async (req, res) => {
         throw new ApiError(500, "Failed to upload video")
     }
 
-    return res.status(200).json(new ApiResponse(200, uploadedVideo, "Video uploaded successfully"))
+    const responseMessage = requiresManualReview 
+        ? "Video uploaded successfully! Your video is under review and will be published after approval."
+        : "Video uploaded and published successfully!";
+
+    return res.status(200).json(new ApiResponse(200, uploadedVideo, responseMessage))
 })
 
 const getVideoById = asyncHandler(async (req, res) => {

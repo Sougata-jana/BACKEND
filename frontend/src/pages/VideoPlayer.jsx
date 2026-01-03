@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../utils/api'
-import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Bell, BellOff } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
@@ -39,6 +39,26 @@ const VideoPlayer = () => {
     fetchVideo()
   }, [videoId])
 
+  // Check subscription status when video and user are loaded
+  useEffect(() => {
+    const checkSubscription = async () => {
+      if (!video?.owner?._id || !isAuthenticated || !user?._id) {
+        setIsSubscribed(false)
+        return
+      }
+
+      try {
+        const response = await api.get(`/subscriptions/status/${video.owner._id}`)
+        setIsSubscribed(response.data.data.isSubscribed || false)
+      } catch (err) {
+        console.error('Failed to check subscription:', err)
+        setIsSubscribed(false)
+      }
+    }
+
+    checkSubscription()
+  }, [video?.owner?._id, isAuthenticated, user?._id])
+
   const fetchVideo = async () => {
     try {
       setLoading(true)
@@ -47,14 +67,6 @@ const VideoPlayer = () => {
       setVideo(videoData)
       setLikeCount(videoData.likeCount || 0)
       setIsLiked(videoData.isLiked || false)
-      if (videoData.owner?._id && user?._id) {
-        try {
-          const subRes = await api.get(`/user/c/${videoData.owner.username}`)
-          setIsSubscribed(subRes.data.data.isSubscribed || false)
-        } catch (err) {
-          console.warn('Subscription check failed', err)
-        }
-      }
     } catch (error) {
       console.error('Error fetching video:', error)
       toast.error('Failed to load video')
@@ -204,9 +216,15 @@ const VideoPlayer = () => {
     requireAuth(async () => {
       try {
         setSubBusy(true)
-        await api.post(`/subscriptions/toggle/${video.owner._id}`)
-        setIsSubscribed((prev) => !prev)
-        toast.success(isSubscribed ? 'Unsubscribed' : 'Subscribed')
+        const response = await api.post(`/subscriptions/toggle/${video.owner._id}`)
+        // Get the actual subscription status from response
+        const newStatus = response.data.data?.isSubscribed
+        if (newStatus !== undefined) {
+          setIsSubscribed(newStatus)
+        } else {
+          setIsSubscribed((prev) => !prev)
+        }
+        toast.success(newStatus ? 'Subscribed' : 'Unsubscribed')
       } catch (err) {
         const msg = err.response?.data?.message || 'Subscription failed'
         toast.error(msg)
@@ -468,15 +486,15 @@ const VideoPlayer = () => {
             <span>{new Date(video.createdAt).toLocaleDateString()}</span>
           </div>
 
-          <div className="flex items-start space-x-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <Link to={`/channel/${video.owner?.username}`}>
+          <div className="flex flex-col sm:flex-row items-start gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <Link to={`/channel/${video.owner?.username}`} className="flex-shrink-0">
               <img
                 src={video.owner?.avatar}
                 alt={video.owner?.fullname}
                 className="w-12 h-12 rounded-full object-cover cursor-pointer hover:ring-2 ring-red-500 transition-all"
               />
             </Link>
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <Link to={`/channel/${video.owner?.username}`}>
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400">
                   {video.owner?.fullname}
@@ -485,34 +503,49 @@ const VideoPlayer = () => {
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 @{video.owner?.username}
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 break-words">
                 {video.description}
               </p>
             </div>
-            {isAuthenticated ? (
-              isOwnChannel ? (
-                <span className="px-6 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border">
-                  Your channel
-                </span>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              {isAuthenticated ? (
+                isOwnChannel ? (
+                  <span className="px-4 sm:px-6 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border whitespace-nowrap">
+                    Your channel
+                  </span>
+                ) : (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={onToggleSubscribe}
+                      disabled={subBusy}
+                      className={`flex-1 sm:flex-initial px-4 sm:px-6 py-2 rounded-full font-medium transition-colors whitespace-nowrap ${isSubscribed ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'bg-red-600 text-white hover:bg-red-700'}`}
+                    >
+                      {subBusy ? 'Loading...' : isSubscribed ? 'Subscribed' : 'Subscribe'}
+                    </motion.button>
+                    {isSubscribed && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => toast.info('Notifications are enabled for this channel')}
+                        className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                        title="Notifications"
+                      >
+                        <Bell size={20} className="text-gray-900 dark:text-gray-100" />
+                      </motion.button>
+                    )}
+                  </>
+                )
               ) : (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onToggleSubscribe}
-                  disabled={subBusy}
-                  className={`px-6 py-2 rounded-full font-medium transition-colors ${isSubscribed ? 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100' : 'bg-red-600 text-white hover:bg-red-700'}`}
+                <Link
+                  to="/login"
+                  className="w-full sm:w-auto text-center px-4 sm:px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium whitespace-nowrap"
                 >
-                  {subBusy ? 'Loading...' : isSubscribed ? 'Subscribed' : 'Subscribe'}
-                </motion.button>
-              )
-            ) : (
-              <Link
-                to="/login"
-                className="px-6 py-2 bg-red-600 text-white rounded-full hover:bg-red-700 transition-colors font-medium"
-              >
-                Sign in to subscribe
-              </Link>
-            )}
+                  Sign in to subscribe
+                </Link>
+              )}
+            </div>
           </div>
 
           <div className="mt-6">
