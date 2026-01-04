@@ -6,43 +6,37 @@ import fs from 'fs';
 // Enhanced keyword detection with variations and patterns
 export const checkText = (text) => {
   const inappropriateKeywords = [
-    // Sexual/Adult content - expanded list
-    'porn', 'sex', 'xxx', 'adult', '18+', 'nsfw', 'nude', 'naked', 'nudes',
-    'explicit', 'erotic', 'sexual', 'hentai', 'pussy', 'dick', 'cock',
-    'boobs', 'boob', 'ass', 'tits', 'tit', 'penis', 'vagina', 'fuck', 'fucking',
-    'blowjob', 'handjob', 'masturbate', 'masturbation', 'orgasm', 'pornography',
-    'sexy video', 'hot video', 'adult video', 'bf video', 'gf video',
-    'leaked', 'onlyfans', 'strip', 'stripper', 'escort', 'hookup',
-    'anal', 'oral', 'cumshot', 'threesome', 'gangbang', 'bdsm',
-    'fetish', 'kinky', 'milf', 'teen sex', 'virgin', 'incest',
+    // Sexual/Adult content - only exact words
+    'porn', 'pornography', 'sex video', 'xxx', 'nsfw', 'nude video', 'naked video', 'nudes',
+    'explicit content', 'erotic', 'sexual content', 'hentai', 'pussy', 'dick', 'cock',
+    'boobs video', 'sexy video', 'hot video', 'adult video', 'bf video', 'gf video',
+    'leaked video', 'onlyfans', 'strip video', 'stripper', 'escort', 'hookup',
+    'sex scene', 'porn video', '18+ video', 'adult content',
     
-    // L33t speak / number substitutions
-    's3x', 'p0rn', 'n00d', 'a$$', 'fck', 'fuk', 'sxy',
+    // L33t speak / number substitutions - only exact
+    's3x', 'p0rn', 'n00d', 'fck', 'fuk',
     
-    // Violence/Disturbing
-    'gore', 'blood', 'kill', 'murder', 'suicide', 'torture',
-    'violence', 'brutal', 'death', 'dead body', 'beheading',
-    
-    // Hate speech
-    'hate', 'racist', 'nazi', 'terrorism', 'terrorist'
+    // Violence/Disturbing - only extreme cases
+    'gore video', 'brutal video', 'dead body', 'beheading'
   ];
 
   const lowerText = text.toLowerCase();
   
-  // Remove spaces and special characters for better detection
-  const cleanText = lowerText.replace(/[^a-z0-9]/g, '');
-  
+  // Use word boundaries to match whole words/phrases only
   const foundKeywords = inappropriateKeywords.filter(keyword => {
-    const cleanKeyword = keyword.replace(/[^a-z0-9]/g, '');
-    return lowerText.includes(keyword) || cleanText.includes(cleanKeyword);
+    // Create regex with word boundaries for single words
+    const pattern = keyword.includes(' ') 
+      ? new RegExp(keyword.replace(/\s+/g, '\\s+'), 'i') 
+      : new RegExp(`\\b${keyword}\\b`, 'i');
+    return pattern.test(lowerText);
   });
 
   // Check for suspicious patterns
   const suspiciousPatterns = [
-    /\b(hot|sexy|nude|naked)\s+(girl|boy|woman|man|video)\b/i,
-    /\b(18|21)\+?\s*(only|plus|content|video)\b/i,
-    /\b(adult|mature)\s*content\b/i,
-    /\b(watch|download|free)\s*(porn|sex|nude)\b/i,
+    /\b(hot|sexy|nude|naked)\s+(girl|boy|woman|man)\s+video\b/i,
+    /\b(18|21)\+?\s*(video|content)\b/i,
+    /\badult\s+content\b/i,
+    /\b(watch|download|free)\s*(porn|sex)\b/i,
   ];
 
   const patternMatch = suspiciousPatterns.some(pattern => pattern.test(text));

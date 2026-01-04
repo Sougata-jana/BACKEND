@@ -79,6 +79,11 @@ const getAllVideos = asyncHandler(async (req, res) => {
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
+    console.log('🎬 === VIDEO UPLOAD REQUEST RECEIVED ===');
+    console.log('📝 Title:', req.body.title);
+    console.log('📝 Description:', req.body.description);
+    console.log('📁 Files:', req.files);
+    
     const { title, description } = req.body
 
     if (!title || !description) {
@@ -101,64 +106,46 @@ const publishAVideo = asyncHandler(async (req, res) => {
     
     let requiresManualReview = false;
     
-    // TEMPORARILY DISABLED: Text moderation to test AI moderation
-    // We'll rely only on Cloudinary AI for content analysis
-    console.log('⚠️  Text moderation disabled - relying on AI content analysis');
-    
-    // try {
-    //     const moderationResult = await moderateContent({
-    //         title,
-    //         description,
-    //         videoPath: videoLocalPath,
-    //         thumbnailPath: thumbnailLocalPath
-    //     });
+    // Text-based moderation (checks titles, descriptions, filenames)
+    try {
+        const moderationResult = await moderateContent({
+            title,
+            description,
+            videoPath: videoLocalPath,
+            thumbnailPath: thumbnailLocalPath
+        });
 
-    //     if (!moderationResult.passed) {
-    //         // Delete uploaded files before rejecting
-    //         const fs = await import('fs');
-    //         if (fs.existsSync(videoLocalPath)) fs.unlinkSync(videoLocalPath);
-    //         if (fs.existsSync(thumbnailLocalPath)) fs.unlinkSync(thumbnailLocalPath);
-    //         
-    //         throw new ApiError(
-    //             403, 
-    //             `🚫 Upload blocked: ${moderationResult.reasons.join(' | ')}. Your content violates our community guidelines.`
-    //         );
-    //     }
+        if (!moderationResult.passed) {
+            // Delete uploaded files before rejecting
+            const fs = await import('fs');
+            if (fs.existsSync(videoLocalPath)) fs.unlinkSync(videoLocalPath);
+            if (fs.existsSync(thumbnailLocalPath)) fs.unlinkSync(thumbnailLocalPath);
+            
+            throw new ApiError(
+                403, 
+                `🚫 Upload blocked: ${moderationResult.reasons.join(' | ')}. Your content violates our community guidelines.`
+            );
+        }
 
-    //     // Check if requires manual review
-    //     requiresManualReview = moderationResult.requiresReview;
-    //     
-    //     if (requiresManualReview) {
-    //         console.log('⚠️  Video flagged for manual review - will be unpublished until approved');
-    //     } else {
-    //         console.log('✅ Content passed all moderation checks - auto-approved');
-    //     }
-    // } catch (error) {
-    //     if (error instanceof ApiError) {
-    //         throw error;
-    //     }
-    //     // If moderation service fails, require manual review for safety
-    //     console.error('⚠️ Moderation check failed:', error.message);
-    //     requiresManualReview = true;
-    // }
+        // Check if requires manual review
+        requiresManualReview = moderationResult.requiresReview;
+        
+        if (requiresManualReview) {
+            console.log('⚠️  Video flagged for manual review - will be unpublished until approved');
+        } else {
+            console.log('✅ Content passed all moderation checks - auto-approved');
+        }
+    } catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        // If moderation service fails, require manual review for safety
+        console.error('⚠️ Moderation check failed:', error.message);
+        requiresManualReview = true;
+    }
 
     const videoFile = await uploadCloudinary(videoLocalPath)
     const thumbnail = await uploadCloudinary(thumbnailLocalPath)
-
-    // 🤖 AI Content Analysis - Check if Cloudinary AI flagged inappropriate content
-    if (videoFile && videoFile.inappropriate) {
-        throw new ApiError(
-            403, 
-            `🚫 AI detected inappropriate content in your video: ${videoFile.message || 'Content violates community guidelines'}`
-        );
-    }
-
-    if (thumbnail && thumbnail.inappropriate) {
-        throw new ApiError(
-            403, 
-            `🚫 AI detected inappropriate content in your thumbnail: ${thumbnail.message || 'Image violates community guidelines'}`
-        );
-    }
 
     if (!videoFile || videoFile.error) {
         throw new ApiError(400, "Video file upload failed")
@@ -166,6 +153,53 @@ const publishAVideo = asyncHandler(async (req, res) => {
 
     if (!thumbnail || thumbnail.error) {
         throw new ApiError(400, "Thumbnail upload failed")
+    }
+
+    // 🤖 AI Content Analysis using Sightengine (checks thumbnail only for speed)
+    console.log('🤖 Starting AI content analysis on thumbnail...');
+    try {
+        const { checkContent } = await import('../utils/sightengine.js');
+        
+        // Check thumbnail for inappropriate content
+        const startTime = Date.now();
+        const aiResult = await checkContent(thumbnail.url);
+        const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+        
+        console.log(`⏱️  AI analysis completed in ${duration}s`);
+        
+        if (aiResult.inappropriate) {
+            console.log('🚫 Upload rejected by AI moderation');
+            
+            // Delete uploaded files from Cloudinary
+            const { deleteFromCloudinary } = await import('../utils/cloudinary.js');
+            console.log('🗑️  Deleting uploaded files...');
+            await Promise.all([
+                deleteFromCloudinary(videoFile.url),
+                deleteFromCloudinary(thumbnail.url)
+            ]);
+            
+            throw new ApiError(
+                403, 
+                aiResult.reason || '🚫 AI detected inappropriate content in your upload'
+            );
+        }
+        
+        console.log('✅ Content passed AI moderation!');
+        
+        // If AI check failed but didn't find inappropriate content, flag for manual review
+        if (aiResult.requiresReview) {
+            console.log('⚠️  AI check inconclusive - flagging for manual review');
+            requiresManualReview = true;
+        }
+        
+    } catch (error) {
+        if (error instanceof ApiError) {
+            throw error; // Re-throw if it's our ApiError
+        }
+        console.error('⚠️  AI moderation error:', error.message);
+        console.log('📝 Allowing upload but flagging for manual review');
+        // If AI fails, allow upload but flag for manual review
+        requiresManualReview = true;
     }
 
     // Create video with appropriate publish status

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../utils/api'
-import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Bell, BellOff } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Facebook, Twitter, Instagram, Link as LinkIcon, Copy, X, PencilLine, Play, Pause, Volume2, VolumeX, Maximize, Minimize, Bell, BellOff, Settings, Gauge, SkipForward, SkipBack, Repeat, Repeat1, PictureInPicture, Download, Maximize2, Camera, RotateCcw, RotateCw } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import toast from 'react-hot-toast'
 
@@ -34,6 +34,14 @@ const VideoPlayer = () => {
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [playbackSpeed, setPlaybackSpeed] = useState(1)
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false)
+  const [showQualityMenu, setShowQualityMenu] = useState(false)
+  const [quality, setQuality] = useState('auto')
+  const [isLooping, setIsLooping] = useState(false)
+  const [theaterMode, setTheaterMode] = useState(false)
+  const [showMoreControls, setShowMoreControls] = useState(false)
+  const [skipIndicator, setSkipIndicator] = useState(null) // {amount: '+10s', timestamp: Date.now(), direction: 'forward'}
 
   useEffect(() => {
     fetchVideo()
@@ -113,12 +121,111 @@ const VideoPlayer = () => {
     const handleEnded = () => setIsPlaying(false)
     const handleFullscreenChange = () => setIsFullscreen(!!document.fullscreenElement)
 
+    // Keyboard shortcuts
+    const handleKeyPress = (e) => {
+      // Ignore if user is typing in an input
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+
+      switch(e.key.toLowerCase()) {
+        case ' ':
+        case 'k':
+          e.preventDefault()
+          togglePlay()
+          break
+        case 'm':
+          e.preventDefault()
+          toggleMute()
+          break
+        case 'f':
+          e.preventDefault()
+          toggleFullscreen()
+          break
+        case 't':
+          e.preventDefault()
+          toggleTheaterMode()
+          break
+        case 'l':
+          e.preventDefault()
+          toggleLoop()
+          break
+        case 'i':
+          e.preventDefault()
+          enablePictureInPicture()
+          break
+        case 's':
+          e.preventDefault()
+          takeScreenshot()
+          break
+        case 'arrowleft':
+          e.preventDefault()
+          if (video) {
+            video.currentTime = Math.max(0, video.currentTime - 5)
+            setSkipIndicator({ amount: '-5s', timestamp: Date.now(), direction: 'backward' })
+            setTimeout(() => setSkipIndicator(null), 800)
+          }
+          break
+        case 'arrowright':
+          e.preventDefault()
+          if (video) {
+            video.currentTime = Math.min(video.duration, video.currentTime + 5)
+            setSkipIndicator({ amount: '+5s', timestamp: Date.now(), direction: 'forward' })
+            setTimeout(() => setSkipIndicator(null), 800)
+          }
+          break
+        case 'j':
+          e.preventDefault()
+          skipBackward()
+          break
+        case '>':
+        case '.':
+          e.preventDefault()
+          if (playbackSpeed < 2) {
+            changePlaybackSpeed(Math.min(2, playbackSpeed + 0.25))
+          }
+          break
+        case '<':
+        case ',':
+          e.preventDefault()
+          if (playbackSpeed > 0.25) {
+            changePlaybackSpeed(Math.max(0.25, playbackSpeed - 0.25))
+          }
+          break
+        case 'arrowup':
+          e.preventDefault()
+          if (video) {
+            const newVol = Math.min(1, video.volume + 0.1)
+            video.volume = newVol
+            setVolume(newVol)
+            setIsMuted(false)
+          }
+          break
+        case 'arrowdown':
+          e.preventDefault()
+          if (video) {
+            const newVol = Math.max(0, video.volume - 0.1)
+            video.volume = newVol
+            setVolume(newVol)
+          }
+          break
+        case '0':
+        case 'home':
+          e.preventDefault()
+          if (video) video.currentTime = 0
+          break
+        case 'end':
+          e.preventDefault()
+          if (video) video.currentTime = video.duration
+          break
+      }
+    }
+
     video.addEventListener('timeupdate', updateTime)
     video.addEventListener('loadedmetadata', updateDuration)
     video.addEventListener('play', handlePlay)
     video.addEventListener('pause', handlePause)
     video.addEventListener('ended', handleEnded)
     document.addEventListener('fullscreenchange', handleFullscreenChange)
+    document.addEventListener('keydown', handleKeyPress)
 
     return () => {
       video.removeEventListener('timeupdate', updateTime)
@@ -127,6 +234,7 @@ const VideoPlayer = () => {
       video.removeEventListener('pause', handlePause)
       video.removeEventListener('ended', handleEnded)
       document.removeEventListener('fullscreenchange', handleFullscreenChange)
+      document.removeEventListener('keydown', handleKeyPress)
     }
   }, [video])
 
@@ -191,6 +299,93 @@ const VideoPlayer = () => {
       return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
     }
     return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const changePlaybackSpeed = (speed) => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = speed
+      setPlaybackSpeed(speed)
+      setShowSpeedMenu(false)
+      toast.success(`Speed: ${speed}x`)
+    }
+  }
+
+  const changeQuality = (newQuality) => {
+    setQuality(newQuality)
+    setShowQualityMenu(false)
+    toast.success(`Quality: ${newQuality}`)
+  }
+
+  const skipForward = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.min(duration, videoRef.current.currentTime + 10)
+      setSkipIndicator({ amount: '+10s', timestamp: Date.now(), direction: 'forward' })
+      setTimeout(() => setSkipIndicator(null), 800)
+    }
+  }
+
+  const skipBackward = () => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = Math.max(0, videoRef.current.currentTime - 10)
+      setSkipIndicator({ amount: '-10s', timestamp: Date.now(), direction: 'backward' })
+      setTimeout(() => setSkipIndicator(null), 800)
+    }
+  }
+
+  const toggleLoop = () => {
+    if (videoRef.current) {
+      videoRef.current.loop = !isLooping
+      setIsLooping(!isLooping)
+      toast.success(isLooping ? 'Loop disabled' : 'Loop enabled')
+    }
+  }
+
+  const toggleTheaterMode = () => {
+    setTheaterMode(!theaterMode)
+    toast.success(theaterMode ? 'Normal mode' : 'Theater mode')
+  }
+
+  const enablePictureInPicture = async () => {
+    if (videoRef.current && document.pictureInPictureEnabled) {
+      try {
+        if (document.pictureInPictureElement) {
+          await document.exitPictureInPicture()
+        } else {
+          await videoRef.current.requestPictureInPicture()
+          toast.success('Picture-in-Picture enabled')
+        }
+      } catch (err) {
+        toast.error('Picture-in-Picture not supported')
+      }
+    }
+  }
+
+  const takeScreenshot = () => {
+    if (videoRef.current) {
+      const canvas = document.createElement('canvas')
+      canvas.width = videoRef.current.videoWidth
+      canvas.height = videoRef.current.videoHeight
+      canvas.getContext('2d').drawImage(videoRef.current, 0, 0)
+      canvas.toBlob((blob) => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${video?.title || 'screenshot'}-${Date.now()}.png`
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success('Screenshot saved!')
+      })
+    }
+  }
+
+  const downloadVideo = () => {
+    if (video?.videoFile) {
+      const a = document.createElement('a')
+      a.href = video.videoFile
+      a.download = `${video.title}.mp4`
+      a.click()
+      toast.success('Download started')
+    }
   }
 
   const onToggleLike = () => {
@@ -320,9 +515,9 @@ const VideoPlayer = () => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="space-y-6"
+        className={`space-y-6 ${theaterMode ? 'max-w-full px-4' : ''}`}
       >
-        <div className="relative aspect-video bg-black rounded-lg overflow-hidden shadow-lg group">
+        <div className={`relative bg-black rounded-lg overflow-hidden shadow-lg group ${theaterMode ? 'aspect-video' : 'aspect-video'}`}>
           <video
             ref={videoRef}
             src={video.videoFile}
@@ -361,73 +556,326 @@ const VideoPlayer = () => {
             </div>
           )}
 
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 opacity-0 group-hover:opacity-100 transition-opacity">
-            <div className="flex items-center gap-2 mb-2">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  togglePlay()
+          {/* Skip Indicator */}
+          <AnimatePresence>
+            {skipIndicator && (
+              <motion.div
+                key={skipIndicator.timestamp}
+                initial={{ 
+                  opacity: 0, 
+                  scale: 0.5, 
+                  x: skipIndicator.direction === 'forward' ? 100 : -100 
                 }}
-                className="text-white hover:text-red-500 transition-colors"
+                animate={{ 
+                  opacity: 1, 
+                  scale: 1, 
+                  x: 0 
+                }}
+                exit={{ 
+                  opacity: 0, 
+                  scale: 0.8, 
+                  x: skipIndicator.direction === 'forward' ? 100 : -100 
+                }}
+                className={`absolute top-1/2 -translate-y-1/2 pointer-events-none z-50 ${
+                  skipIndicator.direction === 'forward' ? 'right-16' : 'left-16'
+                }`}
               >
-                {isPlaying ? <Pause size={20} /> : <Play size={20} />}
-              </motion.button>
+                <div className="bg-black/80 backdrop-blur-sm px-6 py-4 rounded-2xl border-2 border-white/30 shadow-2xl flex items-center gap-3">
+                  {skipIndicator.direction === 'backward' ? (
+                    <RotateCcw className="text-white" size={32} />
+                  ) : (
+                    <RotateCw className="text-white" size={32} />
+                  )}
+                  <span className="text-white text-2xl font-bold">{skipIndicator.amount}</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            {/* Progress Bar */}
+            <div
+              className="flex-1 relative h-1.5 bg-white/20 rounded-full cursor-pointer group/seek mb-3 hover:h-2 transition-all"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleSeek(e)
+              }}
+            >
               <div
-                className="flex-1 relative h-1.5 bg-white/30 rounded-full cursor-pointer group/seek"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleSeek(e)
-                }}
-              >
-                <div
-                  className="absolute top-0 left-0 h-full bg-red-600 rounded-full transition-all"
-                  style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-                />
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-red-600 rounded-full -ml-1.5 opacity-0 group-hover/seek:opacity-100 transition-opacity"
-                  style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
-                />
+                className="absolute top-0 left-0 h-full bg-red-600 rounded-full transition-all"
+                style={{ width: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+              />
+              <div
+                className="absolute top-1/2 -translate-y-1/2 w-3.5 h-3.5 bg-red-600 rounded-full shadow-lg -ml-1.5 opacity-0 group-hover/seek:opacity-100 transition-opacity"
+                style={{ left: `${duration ? (currentTime / duration) * 100 : 0}%` }}
+              />
+            </div>
+
+            {/* Controls Row */}
+            <div className="flex items-center justify-between gap-3">
+              {/* Left Controls */}
+              <div className="flex items-center gap-3">
+                {/* Play/Pause */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    togglePlay()
+                  }}
+                  className="text-white hover:text-red-500 transition-colors"
+                >
+                  {isPlaying ? <Pause size={24} /> : <Play size={24} />}
+                </motion.button>
+
+                {/* Skip Backward */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    skipBackward()
+                  }}
+                  className="text-white/90 hover:text-white transition-colors hidden sm:block"
+                  title="10s back (J)"
+                >
+                  <SkipBack size={20} />
+                </motion.button>
+
+                {/* Skip Forward */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    skipForward()
+                  }}
+                  className="text-white/90 hover:text-white transition-colors hidden sm:block"
+                  title="10s forward"
+                >
+                  <SkipForward size={20} />
+                </motion.button>
+
+                {/* Volume */}
+                <div className="flex items-center gap-2">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      toggleMute()
+                    }}
+                    className="text-white hover:text-red-500 transition-colors"
+                  >
+                    {isMuted ? <VolumeX size={22} /> : <Volume2 size={22} />}
+                  </motion.button>
+
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={isMuted ? 0 : volume}
+                    onChange={handleVolumeChange}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-0 sm:w-20 opacity-0 sm:opacity-100 h-1 cursor-pointer accent-red-600 transition-all hover:accent-red-500"
+                  />
+                </div>
+
+                {/* Time */}
+                <span className="text-white/90 text-sm font-medium hidden sm:block">
+                  {formatTime(currentTime)} / {formatTime(duration)}
+                </span>
               </div>
 
-              <span className="text-white text-xs min-w-[100px] text-right">{formatTime(currentTime)} / {formatTime(duration)}</span>
+              {/* Right Controls */}
+              <div className="flex items-center gap-2">
+                {/* Loop */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleLoop()
+                  }}
+                  className={`transition-colors hidden sm:block ${isLooping ? 'text-red-500' : 'text-white/80 hover:text-white'}`}
+                  title="Loop (L)"
+                >
+                  {isLooping ? <Repeat1 size={20} /> : <Repeat size={20} />}
+                </motion.button>
 
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleMute()
-                }}
-                className="text-white hover:text-red-500 transition-colors"
-              >
-                {isMuted ? <VolumeX size={20} /> : <Volume2 size={20} />}
-              </motion.button>
+                {/* Speed */}
+                <div className="relative hidden sm:block">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowSpeedMenu(!showSpeedMenu)
+                      setShowQualityMenu(false)
+                      setShowMoreControls(false)
+                    }}
+                    className="text-white/90 hover:text-white transition-colors px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-semibold min-w-[48px]"
+                    title="Speed"
+                  >
+                    {playbackSpeed}x
+                  </motion.button>
 
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={isMuted ? 0 : volume}
-                onChange={handleVolumeChange}
-                onClick={(e) => e.stopPropagation()}
-                className="w-20 h-1 cursor-pointer"
-              />
+                  <AnimatePresence>
+                    {showSpeedMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-full mb-2 right-0 bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-2xl overflow-hidden border border-white/10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {[0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
+                          <button
+                            key={speed}
+                            onClick={() => changePlaybackSpeed(speed)}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-red-600 transition-colors ${
+                              playbackSpeed === speed ? 'bg-red-600 text-white font-semibold' : 'text-gray-300'
+                            }`}
+                          >
+                            {speed}x {speed === 1 && '(Normal)'}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
 
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={(e) => {
-                  e.stopPropagation()
-                  toggleFullscreen()
-                }}
-                className="text-white hover:text-red-500 transition-colors"
-              >
-                {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
-              </motion.button>
+                {/* Quality */}
+                <div className="relative hidden md:block">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowQualityMenu(!showQualityMenu)
+                      setShowSpeedMenu(false)
+                      setShowMoreControls(false)
+                    }}
+                    className="text-white/90 hover:text-white transition-colors px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-xs font-semibold uppercase"
+                    title="Quality"
+                  >
+                    {quality}
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {showQualityMenu && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-full mb-2 right-0 bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-2xl overflow-hidden border border-white/10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {['auto', '1080p', '720p', '480p', '360p'].map((qual) => (
+                          <button
+                            key={qual}
+                            onClick={() => changeQuality(qual)}
+                            className={`w-full px-4 py-2 text-left text-sm hover:bg-red-600 transition-colors uppercase ${
+                              quality === qual ? 'bg-red-600 text-white font-semibold' : 'text-gray-300'
+                            }`}
+                          >
+                            {qual}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* More Options */}
+                <div className="relative">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowMoreControls(!showMoreControls)
+                      setShowSpeedMenu(false)
+                      setShowQualityMenu(false)
+                    }}
+                    className="text-white/90 hover:text-white transition-colors"
+                    title="More"
+                  >
+                    <Settings size={22} />
+                  </motion.button>
+
+                  <AnimatePresence>
+                    {showMoreControls && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-full mb-2 right-0 bg-gray-900/95 backdrop-blur-sm rounded-lg shadow-2xl overflow-hidden border border-white/10 min-w-[220px]"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() => {
+                            enablePictureInPicture()
+                            setShowMoreControls(false)
+                          }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-red-600 transition-colors text-gray-300 flex items-center gap-3 text-sm"
+                        >
+                          <PictureInPicture size={18} />
+                          Picture-in-Picture
+                          <span className="ml-auto text-xs text-gray-500">I</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            toggleTheaterMode()
+                            setShowMoreControls(false)
+                          }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-red-600 transition-colors text-gray-300 flex items-center gap-3 text-sm"
+                        >
+                          <Maximize2 size={18} />
+                          Theater Mode
+                          <span className="ml-auto text-xs text-gray-500">T</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            takeScreenshot()
+                            setShowMoreControls(false)
+                          }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-red-600 transition-colors text-gray-300 flex items-center gap-3 text-sm"
+                        >
+                          <Camera size={18} />
+                          Take Screenshot
+                          <span className="ml-auto text-xs text-gray-500">S</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            downloadVideo()
+                            setShowMoreControls(false)
+                          }}
+                          className="w-full px-4 py-2.5 text-left hover:bg-red-600 transition-colors text-gray-300 flex items-center gap-3 text-sm"
+                        >
+                          <Download size={18} />
+                          Download Video
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Fullscreen */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    toggleFullscreen()
+                  }}
+                  className="text-white hover:text-red-500 transition-colors"
+                  title="Fullscreen (F)"
+                >
+                  {isFullscreen ? <Minimize size={24} /> : <Maximize size={24} />}
+                </motion.button>
+              </div>
             </div>
           </div>
         </div>
