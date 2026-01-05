@@ -3,6 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight } from 'lucide-react'
+import OTPVerification from '../components/OTPVerification'
+import { api } from '../utils/api'
+import toast from 'react-hot-toast'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -17,7 +20,8 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { register } = useAuth()
+  const [showOTP, setShowOTP] = useState(false)
+  const { setUser, setIsAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [avatarPreview, setAvatarPreview] = useState('')
   const [coverPreview, setCoverPreview] = useState('')
@@ -56,40 +60,78 @@ const Register = () => {
     e.preventDefault()
     
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match')
+      toast.error('Passwords do not match')
       return
     }
 
-    if (!formData.avatar) {
-      alert('Avatar is required')
+    if (formData.password.length < 6) {
+      toast.error('Password must be at least 6 characters')
       return
     }
 
     setLoading(true)
 
     try {
-      const body = new FormData()
-      body.append('username', formData.username)
-      body.append('email', formData.email)
-      body.append('fullname', formData.fullname)
-      body.append('password', formData.password)
-      if (formData.avatar) body.append('avatar', formData.avatar)
-      if (formData.coverImage) body.append('coverImage', formData.coverImage)
-
-      const result = await register(body)
+      // Send OTP to email
+      const response = await api.post('/users/send-signup-otp', { email: formData.email })
       
-      if (result.success) {
-        navigate('/login')
+      if (response.data.success) {
+        toast.success('OTP sent to your email!')
+        setShowOTP(true)
       }
     } catch (error) {
-      console.error('Registration error:', error)
+      console.error('Error sending OTP:', error)
+      toast.error(error.response?.data?.message || 'Failed to send OTP')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleVerifyOTP = async (otp) => {
+    try {
+      // Verify OTP and create account (avatar will use default)
+      const response = await api.post('/users/verify-signup-otp', {
+        email: formData.email,
+        otp,
+        username: formData.username,
+        fullname: formData.fullname,
+        password: formData.password,
+        avatar: 'https://res.cloudinary.com/backendsougata/image/upload/v1234567890/default-avatar.png',
+        coverImage: ''
+      })
+
+      if (response.data.success) {
+        toast.success('Account created successfully! Please login.')
+        navigate('/login')
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error)
+      throw new Error(error.response?.data?.message || 'Invalid OTP')
+    }
+  }
+
+  const handleResendOTP = async () => {
+    try {
+      await api.post('/users/send-signup-otp', { email: formData.email })
+      return true
+    } catch (error) {
+      throw new Error('Failed to resend OTP')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* OTP Modal */}
+      {showOTP && (
+        <OTPVerification
+          email={formData.email}
+          onVerify={handleVerifyOTP}
+          onResend={handleResendOTP}
+          onCancel={() => setShowOTP(false)}
+          purpose="signup"
+        />
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -133,17 +175,16 @@ const Register = () => {
           onSubmit={handleSubmit}
         >
           <div className="space-y-4">
-            {/* Avatar (required) */}
+            {/* Avatar (optional - will use default if not provided) */}
             <div>
               <label htmlFor="avatar" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Avatar (required)
+                Avatar (optional - default provided)
               </label>
               <input
                 id="avatar"
                 name="avatar"
                 type="file"
                 accept="image/*"
-                required
                 onChange={handleChange}
                 className="file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-red-50 file:text-red-700 hover:file:bg-red-100 dark:file:bg-gray-800 dark:file:text-gray-100"
               />

@@ -1,8 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
+import { OTP } from "../models/otp.model.js";
 import { uploadCloudinary,  } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import { generateOTP, sendOTPEmail, sendWelcomeEmail } from "../utils/emailService.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
 
@@ -456,6 +458,186 @@ const makeCurrentUserAdmin = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, { isAdmin: user.isAdmin }, "You are now an admin!"))
 })
 
+// Send OTP for signup
+const sendSignupOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new ApiError(400, "Email is required");
+  }
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    throw new ApiError(409, "User with this email already exists");
+  }
+
+  // Delete any existing OTPs for this email and purpose
+  await OTP.deleteMany({ email, purpose: 'signup' });
+
+  // Generate and save OTP
+  const otp = generateOTP();
+  await OTP.create({
+    email,
+    otp,
+    purpose: 'signup'
+  });
+
+  // Send OTP email
+  await sendOTPEmail(email, otp, 'signup');
+
+  return res.status(200).json(
+    new ApiResponse(200, { email }, "OTP sent successfully to your email")
+  );
+});
+
+// Verify OTP and complete signup
+const verifySignupOTP = asyncHandler(async (req, res) => {
+  const { email, otp, username, fullname, password, avatar, coverImage } = req.body;
+
+  if (!email || !otp) {
+    throw new ApiError(400, "Email and OTP are required");
+  }
+
+  // Find and verify OTP
+  const otpRecord = await OTP.findOne({
+    email,
+    otp,
+    purpose: 'signup',
+    verified: false,
+    expiresAt: { $gt: new Date() }
+  });
+
+  if (!otpRecord) {
+    throw new ApiError(401, "Invalid or expired OTP");
+  }
+
+  // Validate all required fields
+  if ([username, fullname, password].some((field) => !field || field.trim() === "")) {
+    throw new ApiError(400, "Username, fullname, and password are required");
+  }
+
+  // Check if username is taken
+  const existingUsername = await User.findOne({ username: username.toLowerCase() });
+  if (existingUsername) {
+    throw new ApiError(409, "Username is already taken");
+  }
+
+  // Create user
+  const user = await User.create({
+    username: username.toLowerCase(),
+    fullname,
+    email,
+    password,
+    avatar: avatar || "https://res.cloudinary.com/backendsougata/image/upload/v1234567890/default-avatar.png",
+    coverImage: coverImage || ""
+  });
+
+  // Mark OTP as verified
+  otpRecord.verified = true;
+  await otpRecord.save();
+
+  // Send welcome email
+  await sendWelcomeEmail(email, fullname);
+
+  // Return created user
+  const createdUser = await User.findById(user._id).select("-password -refreshToken");
+
+  return res.status(201).json(
+    new ApiResponse(201, createdUser, "Account created successfully")
+  );
+});
+
+// Send OTP for login
+const sendLoginOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    throw new ApiError(400, "Email is required");
+  }
+
+  // Check if user exists
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // Delete any existing OTPs for this email and purpose
+  await OTP.deleteMany({ email, purpose: 'login' });
+
+  // Generate and save OTP
+  const otp = generateOTP();
+  await OTP.create({
+    email,
+    otp,
+    purpose: 'login'
+  });
+
+  // Send OTP email
+  await sendOTPEmail(email, otp, 'login');
+
+  return res.status(200).json(
+    new ApiResponse(200, { email }, "OTP sent successfully to your email")
+  );
+});
+
+// Verify OTP and complete login
+const verifyLoginOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    throw new ApiError(400, "Email and OTP are required");
+  }
+
+  // Find and verify OTP
+  const otpRecord = await OTP.findOne({
+    email,
+    otp,
+    purpose: 'login',
+    verified: false,
+    expiresAt: { $gt: new Date() }
+  });
+
+  if (!otpRecord) {
+    throw new ApiError(401, "Invalid or expired OTP");
+  }
+
+  // Get user
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // Generate tokens
+  const { refreshToken, accessToken } = await generatingRefreshAndAccessToken(user._id);
+  const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+
+  // Mark OTP as verified
+  otpRecord.verified = true;
+  await otpRecord.save();
+
+  const options = {
+    httpOnly: true,
+    secure: true
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken
+        },
+        "User logged in successfully"
+      )
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -468,5 +650,9 @@ export {
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
-  makeCurrentUserAdmin
+  makeCurrentUserAdmin,
+  sendSignupOTP,
+  verifySignupOTP,
+  sendLoginOTP,
+  verifyLoginOTP
 }

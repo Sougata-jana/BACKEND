@@ -11,7 +11,11 @@ import {
     updateAccountDetails, 
     updateUserAvatar, 
     updateUserCoverImage,
-    makeCurrentUserAdmin
+    makeCurrentUserAdmin,
+    sendSignupOTP,
+    verifySignupOTP,
+    sendLoginOTP,
+    verifyLoginOTP
 } from "../controllers/user.controllers.js";
 import { upload } from "../middlewares/multer.middewares.js";
 import { verifyJWt } from "../middlewares/auth.middlewares.js";
@@ -33,6 +37,11 @@ router.route("/register").post(
 )
 router.route("/login").post(loginUser)
 
+// OTP-based authentication routes
+router.route("/send-signup-otp").post(sendSignupOTP)
+router.route("/verify-signup-otp").post(verifySignupOTP)
+router.route("/send-login-otp").post(sendLoginOTP)
+router.route("/verify-login-otp").post(verifyLoginOTP)
 
 //secure route
 router.route("/logout").post(verifyJWt, logoutUser)

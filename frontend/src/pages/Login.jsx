@@ -2,16 +2,22 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react'
+import { Eye, EyeOff, Mail, Lock, ArrowRight, Shield } from 'lucide-react'
+import OTPVerification from '../components/OTPVerification'
+import { api } from '../utils/api'
+import toast from 'react-hot-toast'
 
 const Login = () => {
   const [formData, setFormData] = useState({
     username: '',
-    password: ''
+    password: '',
+    email: '' // for OTP login
   })
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
+  const [showOTP, setShowOTP] = useState(false)
+  const [useOTPLogin, setUseOTPLogin] = useState(false)
+  const { login, setUser, setIsAuthenticated } = useAuth()
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -26,19 +32,73 @@ const Login = () => {
     setLoading(true)
 
     try {
-      const result = await login(formData)
-      if (result.success) {
-        navigate('/')
+      if (useOTPLogin) {
+        // Send OTP to email
+        const response = await api.post('/users/send-login-otp', { email: formData.email })
+        
+        if (response.data.success) {
+          toast.success('OTP sent to your email!')
+          setShowOTP(true)
+        }
+      } else {
+        // Regular password login
+        const result = await login(formData)
+        if (result.success) {
+          navigate('/')
+        }
       }
     } catch (error) {
       console.error('Login error:', error)
+      toast.error(error.response?.data?.message || 'Login failed')
     } finally {
       setLoading(false)
     }
   }
 
+  const handleVerifyOTP = async (otp) => {
+    try {
+      const response = await api.post('/users/verify-login-otp', {
+        email: formData.email,
+        otp
+      })
+
+      if (response.data.success) {
+        // Set user data in context
+        const userData = response.data.data.user
+        setUser(userData)
+        setIsAuthenticated(true)
+        localStorage.setItem('user', JSON.stringify(userData))
+        
+        toast.success('Logged in successfully!')
+        navigate('/')
+      }
+    } catch (error) {
+      throw new Error(error.response?.data?.message || 'Invalid OTP')
+    }
+  }
+
+  const handleResendOTP = async () => {
+    try {
+      await api.post('/users/send-login-otp', { email: formData.email })
+      return true
+    } catch (error) {
+      throw new Error('Failed to resend OTP')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 to-pink-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      {/* OTP Modal */}
+      {showOTP && (
+        <OTPVerification
+          email={formData.email}
+          onVerify={handleVerifyOTP}
+          onResend={handleResendOTP}
+          onCancel={() => setShowOTP(false)}
+          purpose="login"
+        />
+      )}
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -81,61 +141,115 @@ const Login = () => {
           className="mt-8 space-y-6"
           onSubmit={handleSubmit}
         >
-          <div className="space-y-4">
-            {/* Username/Email Field */}
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Username or Email
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
-                </div>
-                <input
-                  id="username"
-                  name="username"
-                  type="text"
-                  required
-                  value={formData.username}
-                  onChange={handleChange}
-                  className="input pl-10"
-                  placeholder="Enter your username or email"
-                />
-              </div>
-            </div>
+          {/* Login Method Toggle */}
+          <div className="flex gap-2 p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setUseOTPLogin(false)}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
+                !useOTPLogin
+                  ? 'bg-white dark:bg-gray-800 text-red-600 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              <Lock className="inline mr-2" size={16} />
+              Password
+            </button>
+            <button
+              type="button"
+              onClick={() => setUseOTPLogin(true)}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition ${
+                useOTPLogin
+                  ? 'bg-white dark:bg-gray-800 text-red-600 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400'
+              }`}
+            >
+              <Shield className="inline mr-2" size={16} />
+              OTP
+            </button>
+          </div>
 
-            {/* Password Field */}
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+          <div className="space-y-4">
+            {useOTPLogin ? (
+              /* Email Field for OTP Login */
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Address
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={handleChange}
+                    className="input pl-10"
+                    placeholder="Enter your email for OTP"
+                  />
                 </div>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="input pl-10 pr-10"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-                  ) : (
-                    <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
-                  )}
-                </button>
               </div>
-            </div>
+            ) : (
+              <>
+                {/* Username/Email Field */}
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Username or Email
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Mail className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="username"
+                      name="username"
+                      type="text"
+                      required
+                      value={formData.username}
+                      onChange={handleChange}
+                      className="input pl-10"
+                      placeholder="Enter your username or email"
+                    />
+                  </div>
+                </div>
+
+                {/* Password Field */}
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Password
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Lock className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <input
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="input pl-10 pr-10"
+                      placeholder="Enter your password"
+                    />
+                    <button
+                      type="button"
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                      ) : (
+                        <Eye className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Submit Button */}
@@ -150,7 +264,7 @@ const Login = () => {
               <div className="loading-spinner w-5 h-5"></div>
             ) : (
               <>
-                Sign in
+                {useOTPLogin ? 'Send OTP' : 'Sign in'}
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </>
             )}
