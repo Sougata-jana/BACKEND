@@ -28,7 +28,7 @@ const Channel = () => {
       try {
         setLoading(true)
         setChannel(null) // Reset channel state to ensure fresh data
-        const { data } = await api.get(`/user/c/${username}`)
+        const { data } = await api.get(`/users/c/${username}`)
         const ch = data.data
         console.log('Fetched channel data:', { isSubscribed: ch.isSubscribed, subscribersCount: ch.subscribersCount })
         setChannel(ch)

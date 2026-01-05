@@ -57,10 +57,15 @@ const Login = () => {
 
   const handleVerifyOTP = async (otp) => {
     try {
+      console.log('Verifying OTP:', otp, 'for email:', formData.email);
       const response = await api.post('/users/verify-login-otp', {
         email: formData.email,
         otp
       })
+
+      console.log('Backend response:', response);
+      console.log('Response data:', response.data);
+      console.log('Success flag:', response.data.success);
 
       if (response.data.success) {
         // Set user data in context
@@ -71,8 +76,13 @@ const Login = () => {
         
         toast.success('Logged in successfully!')
         navigate('/')
+      } else {
+        console.error('Success was false!');
+        throw new Error('Login failed - success was false')
       }
     } catch (error) {
+      console.error('OTP Verification Error:', error);
+      console.error('Error response:', error.response);
       throw new Error(error.response?.data?.message || 'Invalid OTP')
     }
   }

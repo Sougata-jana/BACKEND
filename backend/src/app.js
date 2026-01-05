@@ -44,7 +44,7 @@ import { healthCheck } from './controllers/healthCheck.controllers.js';
 // routes declaration
 app.get("/health", healthCheck)
 
-app.use("/api/v1/user", userRoutes)
+app.use("/api/v1/users", userRoutes)
 app.use("/api/v1/videos", videoRoutes)
 app.use("/api/v1/comments", commentRoutes)
 app.use("/api/v1/likes", likeRoutes)

@@ -42,9 +42,12 @@ const VideoPlayer = () => {
   const [theaterMode, setTheaterMode] = useState(false)
   const [showMoreControls, setShowMoreControls] = useState(false)
   const [skipIndicator, setSkipIndicator] = useState(null) // {amount: '+10s', timestamp: Date.now(), direction: 'forward'}
+  const [relatedVideos, setRelatedVideos] = useState([])
+  const [relatedLoading, setRelatedLoading] = useState(false)
 
   useEffect(() => {
     fetchVideo()
+    fetchRelatedVideos()
   }, [videoId])
 
   // Check subscription status when video and user are loaded
@@ -80,6 +83,18 @@ const VideoPlayer = () => {
       toast.error('Failed to load video')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchRelatedVideos = async () => {
+    try {
+      setRelatedLoading(true)
+      const response = await api.get('/videos', { params: { limit: 12 } })
+      setRelatedVideos(response.data.data.docs || [])
+    } catch (error) {
+      console.error('Error fetching related videos:', error)
+    } finally {
+      setRelatedLoading(false)
     }
   }
 
@@ -509,14 +524,49 @@ const VideoPlayer = () => {
 
   const isOwnChannel = user?._id && video.owner?._id && user._id === video.owner._id
 
+  const formatViews = (views) => {
+    if (views >= 1000000) return `${(views / 1000000).toFixed(1)}M`
+    if (views >= 1000) return `${(views / 1000).toFixed(1)}K`
+    return views?.toString() || '0'
+  }
+
+  const formatDuration = (seconds) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const getTimeAgo = (date) => {
+    const seconds = Math.floor((new Date() - new Date(date)) / 1000)
+    const intervals = {
+      year: 31536000,
+      month: 2592000,
+      week: 604800,
+      day: 86400,
+      hour: 3600,
+      minute: 60
+    }
+    
+    for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+      const interval = Math.floor(seconds / secondsInUnit)
+      if (interval >= 1) {
+        return `${interval} ${unit}${interval > 1 ? 's' : ''} ago`
+      }
+    }
+    return 'Just now'
+  }
+
   return (
-    <div className="max-w-7xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className={`space-y-6 ${theaterMode ? 'max-w-full px-4' : ''}`}
-      >
+    <div className="max-w-[1800px] mx-auto px-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
+        {/* Main Video Section */}
+        <div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className={`space-y-6 ${theaterMode ? 'max-w-full' : ''}`}
+          >
         <div className={`relative bg-black rounded-lg overflow-hidden shadow-lg group ${theaterMode ? 'aspect-video' : 'aspect-video'}`}>
           <video
             ref={videoRef}
@@ -996,13 +1046,22 @@ const VideoPlayer = () => {
             </div>
           </div>
 
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">
-              Comments {comments.length > 0 && `(${comments.length})`}
-            </h3>
-            <div className="mb-4">
+          <div className="mt-8 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-800 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                Comments
+              </h3>
+              <span className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-3 py-1 rounded-full text-sm font-semibold">
+                {comments.length}
+              </span>
+            </div>
+
+            {/* Add Comment Form */}
+            <div className="mb-8">
               {isAuthenticated ? (
-                <form
+                <motion.form
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
                   onSubmit={(e) => {
                     e.preventDefault()
                     if (!newComment.trim()) return
@@ -1011,74 +1070,139 @@ const VideoPlayer = () => {
                         const { data } = await api.post(`/comments/${video._id}`, { content: newComment.trim() })
                         setComments((prev) => [data.data, ...prev])
                         setNewComment('')
-                        toast.success('Comment added')
+                        toast.success('Comment added successfully! 🎉')
                       } catch (err) {
                         const msg = err.response?.data?.message || 'Failed to add comment'
                         toast.error(msg)
                       }
                     })
                   }}
-                  className="flex items-start gap-3"
+                  className="flex gap-4"
                 >
-                  <img src={user?.avatar} alt={user?.fullname} className="w-10 h-10 rounded-full object-cover" />
+                  <motion.img
+                    whileHover={{ scale: 1.05 }}
+                    src={user?.avatar}
+                    alt={user?.fullname}
+                    className="w-12 h-12 rounded-full object-cover border-2 border-red-500 shadow-md"
+                  />
                   <div className="flex-1">
-                    <textarea
-                      className="w-full rounded-md border text-black border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 min-h-[70px] outline-none focus:ring-2 focus:ring-red-500"
-                      placeholder="Add a public comment..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                    />
-                    <div className="mt-2 flex items-center justify-end gap-2">
-                      <button type="button" onClick={() => setNewComment('')} className="px-4 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800">
-                        Cancel
-                      </button>
-                      <button type="submit" className="px-4 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700">
-                        Comment
-                      </button>
+                    <div className="relative">
+                      <textarea
+                        className="w-full rounded-xl border-2 border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 min-h-[100px] outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all resize-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400"
+                        placeholder="Share your thoughts..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                      />
                     </div>
+                    {newComment.trim() && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-3 flex items-center justify-between"
+                      >
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {newComment.length} characters
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="button"
+                            onClick={() => setNewComment('')}
+                            className="px-5 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium transition-all"
+                          >
+                            Cancel
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="submit"
+                            className="px-6 py-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold hover:from-red-700 hover:to-red-800 shadow-lg shadow-red-500/30 transition-all"
+                          >
+                            Comment
+                          </motion.button>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
-                </form>
+                </motion.form>
               ) : (
-                <div className="text-sm text-gray-600 dark:text-gray-300 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                  <Link to="/login" className="text-red-600 dark:text-red-400 hover:underline">
-                    Sign in
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center p-6 bg-gradient-to-r from-red-50 to-pink-50 dark:from-gray-800 dark:to-gray-800 rounded-xl border-2 border-dashed border-red-300 dark:border-gray-700"
+                >
+                  <p className="text-gray-700 dark:text-gray-300 mb-3">
+                    Join the conversation!
+                  </p>
+                  <Link
+                    to="/login"
+                    className="inline-block px-6 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-all shadow-lg shadow-red-500/30"
+                  >
+                    Sign in to comment
                   </Link>
-                  {' '}to comment.
-                </div>
+                </motion.div>
               )}
             </div>
 
+            {/* Comments List */}
             <div className="space-y-4">
               {comments.length === 0 && !cBusy && (
-                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                  No comments yet. Be the first to comment!
-                </div>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-center py-16"
+                >
+                  <div className="inline-block p-4 bg-gray-100 dark:bg-gray-800 rounded-full mb-4">
+                    <svg className="w-12 h-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-500 dark:text-gray-400 text-lg">
+                    No comments yet. Be the first to share your thoughts!
+                  </p>
+                </motion.div>
               )}
-              {comments.map((c) => (
-                <div key={c._id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+              
+              {comments.map((c, idx) => (
+                <motion.div
+                  key={c._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="flex gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all group border border-transparent hover:border-gray-200 dark:hover:border-gray-700"
+                >
                   <Link to={`/channel/${c.owner?.username}`}>
-                    <img
+                    <motion.img
+                      whileHover={{ scale: 1.1 }}
                       src={c.owner?.avatar || '/default-avatar.png'}
                       alt={c.owner?.fullname || 'User'}
-                      className="w-10 h-10 rounded-full object-cover"
+                      className="w-11 h-11 rounded-full object-cover border-2 border-gray-200 dark:border-gray-700 group-hover:border-red-500 transition-all"
                     />
                   </Link>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 text-sm mb-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-2">
                       <Link to={`/channel/${c.owner?.username}`}>
-                        <span className="font-medium text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400">
+                        <span className="font-semibold text-gray-900 dark:text-gray-100 hover:text-red-600 dark:hover:text-red-400 transition-colors">
                           {c.owner?.fullname || 'Unknown User'}
                         </span>
                       </Link>
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-gray-500 dark:text-gray-400 text-sm">
                         @{c.owner?.username || 'unknown'}
                       </span>
                       <span className="text-gray-400 dark:text-gray-500 text-xs">
-                        {new Date(c.createdAt).toLocaleDateString()}
+                        •
+                      </span>
+                      <span className="text-gray-400 dark:text-gray-500 text-xs">
+                        {getTimeAgo(c.createdAt)}
                       </span>
                     </div>
+                    
                     {editingCommentId === c._id ? (
-                      <form
+                      <motion.form
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
                         onSubmit={(e) => {
                           e.preventDefault()
                           requireAuth(async () => {
@@ -1087,56 +1211,74 @@ const VideoPlayer = () => {
                               setComments((prev) => prev.map((x) => (x._id === c._id ? { ...x, content: data.data.content } : x)))
                               setEditingCommentId(null)
                               setEditingContent('')
-                              toast.success('Comment updated')
+                              toast.success('Comment updated! ✨')
                             } catch (err) {
                               const msg = err.response?.data?.message || 'Update failed'
                               toast.error(msg)
                             }
                           })
                         }}
-                        className="mt-1"
                       >
                         <textarea
-                          className="w-full rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 px-3 py-2 min-h-[70px] outline-none focus:ring-2 focus:ring-red-500"
+                          className="w-full rounded-xl border-2 border-red-500 bg-white dark:bg-gray-800 px-4 py-3 min-h-[80px] outline-none focus:ring-2 focus:ring-red-500/20 transition-all resize-none text-gray-900 dark:text-gray-100"
                           value={editingContent}
                           onChange={(e) => setEditingContent(e.target.value)}
                           required
+                          autoFocus
                         />
-                        <div className="mt-2 flex items-center gap-2">
-                          <button
+                        <div className="mt-3 flex items-center gap-2">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                             type="button"
                             onClick={() => {
                               setEditingCommentId(null)
                               setEditingContent('')
                             }}
-                            className="px-3 py-1.5 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
+                            className="px-4 py-2 rounded-lg border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 font-medium transition-all"
                           >
                             Cancel
-                          </button>
-                          <button type="submit" className="px-3 py-1.5 rounded-md bg-red-600 text-white hover:bg-red-700">
-                            Save
-                          </button>
+                          </motion.button>
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="submit"
+                            className="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 transition-all"
+                          >
+                            Save Changes
+                          </motion.button>
                         </div>
-                      </form>
+                      </motion.form>
                     ) : (
-                      <p className="text-sm text-gray-800 dark:text-gray-200 mt-1">{c.content}</p>
+                      <p className="text-gray-800 dark:text-gray-200 leading-relaxed whitespace-pre-wrap break-words">
+                        {c.content}
+                      </p>
                     )}
 
                     {isAuthenticated && user?._id === c.owner?._id && editingCommentId !== c._id && (
-                      <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                        <button
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="mt-3 flex items-center gap-3"
+                      >
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() => {
                             setEditingCommentId(c._id)
                             setEditingContent(c.content)
                           }}
-                          className="hover:underline"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/40 font-medium transition-all"
                         >
+                          <PencilLine size={14} />
                           Edit
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() =>
                             requireAuth(async () => {
-                              if (!confirm('Delete this comment?')) return
+                              if (!confirm('Are you sure you want to delete this comment?')) return
                               try {
                                 await api.delete(`/comments/c/${c._id}`)
                                 setComments((prev) => prev.filter((x) => x._id !== c._id))
@@ -1147,27 +1289,42 @@ const VideoPlayer = () => {
                               }
                             })
                           }
-                          className="hover:underline"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 font-medium transition-all"
                         >
+                          <X size={14} />
                           Delete
-                        </button>
-                      </div>
+                        </motion.button>
+                      </motion.div>
                     )}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
 
+            {/* Load More Button */}
             {cHasMore && (
-              <div className="mt-4">
-                <button
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-6 text-center"
+              >
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   disabled={cBusy}
                   onClick={() => fetchComments(cPage + 1)}
-                  className="px-4 py-2 rounded-md border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50"
+                  className="px-8 py-3 rounded-xl border-2 border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition-all"
                 >
-                  {cBusy ? 'Loading…' : 'Load more'}
-                </button>
-              </div>
+                  {cBusy ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-gray-400 border-t-red-600 rounded-full animate-spin"></div>
+                      Loading...
+                    </span>
+                  ) : (
+                    'Load More Comments'
+                  )}
+                </motion.button>
+              </motion.div>
             )}
           </div>
         </div>
@@ -1302,6 +1459,60 @@ const VideoPlayer = () => {
           </div>
         )}
       </motion.div>
+        </div>
+
+        {/* Related Videos Sidebar */}
+        <div className="hidden lg:block">
+          <div className="sticky top-4">
+            <h3 className="text-lg font-semibold mb-4 dark:text-white">Related Videos</h3>
+            <div className="space-y-3">
+              {relatedLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="w-8 h-8 border-4 border-gray-200 dark:border-gray-700 border-t-red-600 rounded-full animate-spin"></div>
+                </div>
+              ) : relatedVideos.filter(v => v._id !== videoId).slice(0, 10).map((relVideo) => (
+                <Link
+                  key={relVideo._id}
+                  to={`/video/${relVideo._id}`}
+                  className="flex gap-2 group hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg p-2 transition-colors"
+                >
+                  <div className="relative w-40 h-24 flex-shrink-0 bg-gray-200 dark:bg-gray-800 rounded-lg overflow-hidden">
+                    <img
+                      src={relVideo.thumbnail}
+                      alt={relVideo.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    {relVideo.duration && (
+                      <span className="absolute bottom-1 right-1 bg-black/80 text-white text-xs px-1.5 py-0.5 rounded">
+                        {formatDuration(relVideo.duration)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-sm line-clamp-2 dark:text-white group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors">
+                      {relVideo.title}
+                    </h4>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      {relVideo.owner?.fullname || relVideo.owner?.username}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      <span>{formatViews(relVideo.views)} views</span>
+                      <span>•</span>
+                      <span>{getTimeAgo(relVideo.createdAt)}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+              
+              {!relatedLoading && relatedVideos.length === 0 && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No related videos found
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

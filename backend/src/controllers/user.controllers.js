@@ -460,31 +460,49 @@ const makeCurrentUserAdmin = asyncHandler(async (req, res) => {
 
 // Send OTP for signup
 const sendSignupOTP = asyncHandler(async (req, res) => {
+  console.log('📧 Send Signup OTP endpoint hit!');
+  console.log('Request body:', req.body);
+  
   const { email } = req.body;
 
   if (!email) {
+    console.log('❌ Email is missing');
     throw new ApiError(400, "Email is required");
   }
 
+  console.log('📨 Checking if user exists:', email);
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
+    console.log('❌ User already exists');
     throw new ApiError(409, "User with this email already exists");
   }
 
+  console.log('🗑️ Deleting old OTPs...');
   // Delete any existing OTPs for this email and purpose
   await OTP.deleteMany({ email, purpose: 'signup' });
 
+  console.log('🔢 Generating OTP...');
   // Generate and save OTP
   const otp = generateOTP();
+  console.log('Generated OTP:', otp);
+  
   await OTP.create({
     email,
     otp,
     purpose: 'signup'
   });
+  console.log('✅ OTP saved to database');
 
+  console.log('📤 Sending OTP email...');
   // Send OTP email
-  await sendOTPEmail(email, otp, 'signup');
+  try {
+    await sendOTPEmail(email, otp, 'signup');
+    console.log('✅ OTP email sent successfully!');
+  } catch (emailError) {
+    console.error('❌ Failed to send email:', emailError);
+    throw new ApiError(500, "Failed to send OTP email. Please try again.");
+  }
 
   return res.status(200).json(
     new ApiResponse(200, { email }, "OTP sent successfully to your email")
@@ -583,12 +601,19 @@ const sendLoginOTP = asyncHandler(async (req, res) => {
 
 // Verify OTP and complete login
 const verifyLoginOTP = asyncHandler(async (req, res) => {
+  console.log('🔐 Verify Login OTP endpoint hit!');
+  console.log('Request body:', req.body);
+  
   const { email, otp } = req.body;
 
   if (!email || !otp) {
+    console.log('❌ Email or OTP missing');
     throw new ApiError(400, "Email and OTP are required");
   }
 
+  console.log('🔍 Searching for OTP in database...');
+  console.log('Looking for:', { email, otp, purpose: 'login', verified: false });
+  
   // Find and verify OTP
   const otpRecord = await OTP.findOne({
     email,
@@ -598,15 +623,25 @@ const verifyLoginOTP = asyncHandler(async (req, res) => {
     expiresAt: { $gt: new Date() }
   });
 
+  console.log('OTP Record found:', otpRecord);
+
   if (!otpRecord) {
+    // Let's check if there's ANY OTP for this email
+    const anyOTP = await OTP.find({ email }).sort({ createdAt: -1 }).limit(1);
+    console.log('❌ No valid login OTP found. Latest OTP for this email:', anyOTP);
     throw new ApiError(401, "Invalid or expired OTP");
   }
 
+  console.log('✅ Valid OTP found!');
+  
   // Get user
   const user = await User.findOne({ email });
   if (!user) {
+    console.log('❌ User not found');
     throw new ApiError(404, "User not found");
   }
+
+  console.log('👤 User found:', user.email);
 
   // Generate tokens
   const { refreshToken, accessToken } = await generatingRefreshAndAccessToken(user._id);
@@ -615,6 +650,8 @@ const verifyLoginOTP = asyncHandler(async (req, res) => {
   // Mark OTP as verified
   otpRecord.verified = true;
   await otpRecord.save();
+  
+  console.log('✅ Login successful!');
 
   const options = {
     httpOnly: true,
