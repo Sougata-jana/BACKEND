@@ -125,7 +125,7 @@ export const AdminProvider = ({ children }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await api.post('/user/login', credentials);
+      const response = await api.post('/users/login', credentials);
       const { accessToken, refreshToken, user } = response.data.data;
       
       if (!user.isAdmin) {
@@ -148,7 +148,7 @@ export const AdminProvider = ({ children }) => {
   // Logout
   const logout = useCallback(async () => {
     try {
-      await api.post('/user/logout');
+      await api.post('/users/logout');
     } catch (err) {
       console.error('Logout error:', err);
     } finally {
