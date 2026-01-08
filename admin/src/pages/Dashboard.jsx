@@ -67,7 +67,7 @@ const Dashboard = () => {
 
   if (loading && !stats) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900">
+      <div className="flex-1 flex items-center justify-center min-h-screen bg-linear-to-br from-slate-950 via-indigo-950 to-slate-900">
         <div className="text-center">
           <div className="relative w-16 h-16 mx-auto mb-6">
             <div className="absolute inset-0 border-4 border-indigo-500/20 rounded-full"></div>
@@ -102,7 +102,7 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="flex-1 min-h-screen bg-gradient-to-br from-slate-950 via-indigo-950 to-slate-900 relative overflow-hidden">
+    <div className="flex-1 min-h-screen bg-linear-to-br from-slate-950 via-indigo-950 to-slate-900 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 -left-4 w-96 h-96 bg-indigo-500/10 rounded-full mix-blend-multiply filter blur-3xl animate-blob"></div>
@@ -115,10 +115,10 @@ const Dashboard = () => {
         <div className="flex items-center justify-between backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl">
+              <div className="p-2 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl">
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-indigo-200 to-purple-300 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-linear-to-r from-white via-indigo-200 to-purple-300 bg-clip-text text-transparent">
                 Analytics Dashboard
               </h1>
             </div>
@@ -129,7 +129,7 @@ const Dashboard = () => {
               <Clock className="w-4 h-4 text-indigo-400" />
               <span className="text-sm font-medium text-white">{currentTime.toLocaleTimeString()}</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl backdrop-blur-sm">
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-xl backdrop-blur-sm">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
               <span className="text-sm font-semibold text-green-300">Live</span>
             </div>
@@ -144,15 +144,15 @@ const Dashboard = () => {
             <section>
               <div className="relative group">
                 {/* Glow effect */}
-                <div className="absolute -inset-1 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
+                <div className="absolute -inset-1 bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity"></div>
                 
                 {/* Card */}
-                <div className="relative backdrop-blur-xl bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 border border-white/20 rounded-2xl p-8 shadow-2xl">
+                <div className="relative backdrop-blur-xl bg-linear-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 border border-white/20 rounded-2xl p-8 shadow-2xl">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-6">
                       <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-60 animate-pulse"></div>
-                        <div className="relative p-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl">
+                        <div className="absolute inset-0 bg-linear-to-br from-yellow-400 to-orange-500 rounded-2xl blur-xl opacity-60 animate-pulse"></div>
+                        <div className="relative p-4 bg-linear-to-br from-yellow-400 to-orange-500 rounded-2xl">
                           <Flame className="w-8 h-8 text-white" />
                         </div>
                       </div>
@@ -174,7 +174,7 @@ const Dashboard = () => {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-green-500/30 to-emerald-500/30 border-2 border-green-400/50 rounded-xl backdrop-blur-sm shadow-lg shadow-green-500/20">
+                    <div className="flex items-center gap-2 px-5 py-3 bg-linear-to-r from-green-500/30 to-emerald-500/30 border-2 border-green-400/50 rounded-xl backdrop-blur-sm shadow-lg shadow-green-500/20">
                       <TrendingUp className="w-5 h-5 text-green-300" strokeWidth={3} />
                       <span className="text-base font-bold text-green-200">Trending Up</span>
                     </div>
@@ -191,12 +191,12 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Total Users - Enhanced */}
                 <div className="group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
-                  <div className="relative backdrop-blur-xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 rounded-2xl p-6 hover:border-indigo-400/50 transition-all hover:transform hover:scale-105 duration-300">
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-indigo-500 to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
+                  <div className="relative backdrop-blur-xl bg-linear-to-br from-indigo-500/10 to-purple-500/10 border border-white/10 rounded-2xl p-6 hover:border-indigo-400/50 transition-all hover:transform hover:scale-105 duration-300">
                     <div className="flex items-center justify-between mb-6">
                       <div className="relative">
                         <div className="absolute inset-0 bg-indigo-500 rounded-xl blur-lg opacity-40"></div>
-                        <div className="relative p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                        <div className="relative p-3 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
                           <Users className="w-7 h-7 text-white" strokeWidth={2.5} />
                         </div>
                       </div>
@@ -212,7 +212,7 @@ const Dashboard = () => {
                       </h3>
                       <div className="flex items-center gap-2">
                         <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full" style={{ width: '75%' }}></div>
+                          <div className="h-full bg-linear-to-r from-indigo-500 to-purple-600 rounded-full" style={{ width: '75%' }}></div>
                         </div>
                       </div>
                       <p className="text-xs text-green-400 font-semibold mt-2">+{stats.users.recentWeek} this week</p>
@@ -222,12 +222,12 @@ const Dashboard = () => {
 
                 {/* Total Videos - Enhanced */}
                 <div className="group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-pink-500 to-rose-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
-                  <div className="relative backdrop-blur-xl bg-gradient-to-br from-pink-500/10 to-rose-500/10 border border-white/10 rounded-2xl p-6 hover:border-pink-400/50 transition-all hover:transform hover:scale-105 duration-300">
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-pink-500 to-rose-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
+                  <div className="relative backdrop-blur-xl bg-linear-to-br from-pink-500/10 to-rose-500/10 border border-white/10 rounded-2xl p-6 hover:border-pink-400/50 transition-all hover:transform hover:scale-105 duration-300">
                     <div className="flex items-center justify-between mb-6">
                       <div className="relative">
                         <div className="absolute inset-0 bg-pink-500 rounded-xl blur-lg opacity-40"></div>
-                        <div className="relative p-3 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl shadow-lg">
+                        <div className="relative p-3 bg-linear-to-br from-pink-500 to-rose-600 rounded-xl shadow-lg">
                           <Video className="w-7 h-7 text-white" strokeWidth={2.5} />
                         </div>
                       </div>
@@ -243,7 +243,7 @@ const Dashboard = () => {
                       </h3>
                       <div className="flex items-center gap-2">
                         <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-pink-500 to-rose-600 rounded-full" style={{ width: '62%' }}></div>
+                          <div className="h-full bg-linear-to-r from-pink-500 to-rose-600 rounded-full" style={{ width: '62%' }}></div>
                         </div>
                       </div>
                       <p className="text-xs text-green-400 font-semibold mt-2">+{stats.videos.recentWeek} this week</p>
@@ -253,12 +253,12 @@ const Dashboard = () => {
 
                 {/* Total Views - Enhanced */}
                 <div className="group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
-                  <div className="relative backdrop-blur-xl bg-gradient-to-br from-cyan-500/10 to-blue-500/10 border border-white/10 rounded-2xl p-6 hover:border-cyan-400/50 transition-all hover:transform hover:scale-105 duration-300">
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-cyan-500 to-blue-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
+                  <div className="relative backdrop-blur-xl bg-linear-to-br from-cyan-500/10 to-blue-500/10 border border-white/10 rounded-2xl p-6 hover:border-cyan-400/50 transition-all hover:transform hover:scale-105 duration-300">
                     <div className="flex items-center justify-between mb-6">
                       <div className="relative">
                         <div className="absolute inset-0 bg-cyan-500 rounded-xl blur-lg opacity-40"></div>
-                        <div className="relative p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg">
+                        <div className="relative p-3 bg-linear-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg">
                           <Eye className="w-7 h-7 text-white" strokeWidth={2.5} />
                         </div>
                       </div>
@@ -274,7 +274,7 @@ const Dashboard = () => {
                       </h3>
                       <div className="flex items-center gap-2">
                         <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-600 rounded-full" style={{ width: '88%' }}></div>
+                          <div className="h-full bg-linear-to-r from-cyan-500 to-blue-600 rounded-full" style={{ width: '88%' }}></div>
                         </div>
                       </div>
                       <p className="text-xs text-cyan-400 font-semibold mt-2">Lifetime engagement</p>
@@ -284,12 +284,12 @@ const Dashboard = () => {
 
                 {/* Total Likes - Enhanced */}
                 <div className="group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 to-amber-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
-                  <div className="relative backdrop-blur-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border border-white/10 rounded-2xl p-6 hover:border-orange-400/50 transition-all hover:transform hover:scale-105 duration-300">
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-orange-500 to-amber-600 rounded-2xl blur opacity-30 group-hover:opacity-60 transition-opacity"></div>
+                  <div className="relative backdrop-blur-xl bg-linear-to-br from-orange-500/10 to-amber-500/10 border border-white/10 rounded-2xl p-6 hover:border-orange-400/50 transition-all hover:transform hover:scale-105 duration-300">
                     <div className="flex items-center justify-between mb-6">
                       <div className="relative">
                         <div className="absolute inset-0 bg-orange-500 rounded-xl blur-lg opacity-40"></div>
-                        <div className="relative p-3 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-lg">
+                        <div className="relative p-3 bg-linear-to-br from-orange-500 to-amber-600 rounded-xl shadow-lg">
                           <Heart className="w-7 h-7 text-white fill-white" strokeWidth={2.5} />
                         </div>
                       </div>
@@ -305,7 +305,7 @@ const Dashboard = () => {
                       </h3>
                       <div className="flex items-center gap-2">
                         <div className="h-1 flex-1 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-gradient-to-r from-orange-500 to-amber-600 rounded-full" style={{ width: '70%' }}></div>
+                          <div className="h-full bg-linear-to-r from-orange-500 to-amber-600 rounded-full" style={{ width: '70%' }}></div>
                         </div>
                       </div>
                       <p className="text-xs text-orange-400 font-semibold mt-2">User appreciation</p>
@@ -326,7 +326,7 @@ const Dashboard = () => {
                 <div className="col-span-12 md:col-span-4 group">
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-purple-400/50 transition-all duration-300">
                     <div className="flex items-center gap-4">
-                      <div className="p-3.5 bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-xl shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
+                      <div className="p-3.5 bg-linear-to-br from-purple-500 to-fuchsia-600 rounded-xl shadow-lg shadow-purple-500/30 group-hover:scale-110 transition-transform">
                         <UserCheck className="w-7 h-7 text-white" strokeWidth={2.5} />
                       </div>
                       <div>
@@ -341,7 +341,7 @@ const Dashboard = () => {
                 <div className="col-span-12 md:col-span-4 group">
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-emerald-400/50 transition-all duration-300">
                     <div className="flex items-center gap-4">
-                      <div className="p-3.5 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
+                      <div className="p-3.5 bg-linear-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg shadow-emerald-500/30 group-hover:scale-110 transition-transform">
                         <Play className="w-7 h-7 text-white fill-white" strokeWidth={2.5} />
                       </div>
                       <div className="flex-1">
@@ -361,7 +361,7 @@ const Dashboard = () => {
                 <div className="col-span-12 md:col-span-4 group">
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 hover:border-amber-400/50 transition-all duration-300">
                     <div className="flex items-center gap-4">
-                      <div className="p-3.5 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
+                      <div className="p-3.5 bg-linear-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg shadow-amber-500/30 group-hover:scale-110 transition-transform">
                         <TrendingUp className="w-7 h-7 text-white" strokeWidth={2.5} />
                       </div>
                       <div>
@@ -383,7 +383,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-12 gap-6">
                 {/* Video Status Chart with Modern Design */}
                 <div className="col-span-12 lg:col-span-7 relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-indigo-400/50 transition-all shadow-2xl">
                     <div className="flex items-center justify-between mb-8">
                       <div>
@@ -466,7 +466,7 @@ const Dashboard = () => {
 
                 {/* Engagement Chart with Area Chart */}
                 <div className="col-span-12 lg:col-span-5 relative group">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-cyan-500 via-blue-500 to-indigo-500 rounded-3xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 hover:border-cyan-400/50 transition-all shadow-2xl">
                     <div className="mb-8">
                       <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
@@ -548,10 +548,10 @@ const Dashboard = () => {
               <div className="grid grid-cols-12 gap-6">
                 {/* Weekly New Users */}
                 <div className="col-span-12 sm:col-span-6 lg:col-span-3 group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-blue-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-blue-400/50 transition-all hover:scale-105 duration-300">
                     <div className="flex items-center justify-between mb-6">
-                      <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg shadow-blue-500/30">
+                      <div className="p-3 bg-linear-to-br from-blue-500 to-cyan-600 rounded-xl shadow-lg shadow-blue-500/30">
                         <Users className="w-6 h-6 text-white" strokeWidth={2.5} />
                       </div>
                       <span className="text-xs font-bold text-blue-300 bg-blue-400/20 px-3 py-1.5 rounded-full border border-blue-400/30">
@@ -571,10 +571,10 @@ const Dashboard = () => {
 
                 {/* Weekly New Videos */}
                 <div className="col-span-12 sm:col-span-6 lg:col-span-3 group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-purple-400/50 transition-all hover:scale-105 duration-300">
                     <div className="flex items-center justify-between mb-6">
-                      <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg shadow-purple-500/30">
+                      <div className="p-3 bg-linear-to-br from-purple-500 to-pink-600 rounded-xl shadow-lg shadow-purple-500/30">
                         <Video className="w-6 h-6 text-white" strokeWidth={2.5} />
                       </div>
                       <span className="text-xs font-bold text-purple-300 bg-purple-400/20 px-3 py-1.5 rounded-full border border-purple-400/30">
@@ -594,10 +594,10 @@ const Dashboard = () => {
 
                 {/* Publication Rate */}
                 <div className="col-span-12 sm:col-span-6 lg:col-span-3 group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-green-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-emerald-500 to-green-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-emerald-400/50 transition-all hover:scale-105 duration-300">
                     <div className="flex items-center justify-between mb-6">
-                      <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg shadow-emerald-500/30">
+                      <div className="p-3 bg-linear-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg shadow-emerald-500/30">
                         <BarChart3 className="w-6 h-6 text-white" strokeWidth={2.5} />
                       </div>
                       <span className="text-xs font-bold text-emerald-300 bg-emerald-400/20 px-3 py-1.5 rounded-full border border-emerald-400/30">
@@ -611,7 +611,7 @@ const Dashboard = () => {
                       </h3>
                       <div className="mt-3 h-2 bg-white/10 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-green-600 rounded-full transition-all duration-500"
+                          className="h-full bg-linear-to-r from-emerald-500 to-green-600 rounded-full transition-all duration-500"
                           style={{ width: `${((stats.videos.published / stats.videos.total) * 100).toFixed(0)}%` }}
                         ></div>
                       </div>
@@ -621,10 +621,10 @@ const Dashboard = () => {
 
                 {/* Avg Engagement */}
                 <div className="col-span-12 sm:col-span-6 lg:col-span-3 group relative">
-                  <div className="absolute -inset-0.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                  <div className="absolute -inset-0.5 bg-linear-to-r from-orange-500 to-amber-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition-opacity"></div>
                   <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-orange-400/50 transition-all hover:scale-105 duration-300">
                     <div className="flex items-center justify-between mb-6">
-                      <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-600 rounded-xl shadow-lg shadow-orange-500/30">
+                      <div className="p-3 bg-linear-to-br from-orange-500 to-amber-600 rounded-xl shadow-lg shadow-orange-500/30">
                         <Activity className="w-6 h-6 text-white" strokeWidth={2.5} />
                       </div>
                       <span className="text-xs font-bold text-orange-300 bg-orange-400/20 px-3 py-1.5 rounded-full border border-orange-400/30">
@@ -653,14 +653,14 @@ const Dashboard = () => {
                   <Zap className="w-6 h-6 text-yellow-400" />
                   <h2 className="text-2xl font-bold text-white">Recent Platform Activity</h2>
                 </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-500/30 to-emerald-500/30 border border-green-400/40 rounded-xl backdrop-blur-sm">
+                <div className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-green-500/30 to-emerald-500/30 border border-green-400/40 rounded-xl backdrop-blur-sm">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
                   <span className="text-sm font-bold text-green-300">Live Feed</span>
                 </div>
               </div>
               
               <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500 via-purple-500 to-pink-500 rounded-3xl blur opacity-15 group-hover:opacity-30 transition-opacity"></div>
+                <div className="absolute -inset-0.5 bg-linear-to-r from-violet-500 via-purple-500 to-pink-500 rounded-3xl blur opacity-15 group-hover:opacity-30 transition-opacity"></div>
                 <div className="relative backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl overflow-hidden hover:border-purple-400/40 transition-all shadow-2xl">
                   <div className="divide-y divide-white/5">
                     {/* Activity Item 1 - New Video */}
@@ -668,7 +668,7 @@ const Dashboard = () => {
                       <div className="flex items-start gap-5">
                         <div className="relative mt-1">
                           <div className="absolute inset-0 bg-emerald-500 rounded-xl blur-md opacity-40"></div>
-                          <div className="relative p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
+                          <div className="relative p-3 bg-linear-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg">
                             <Play className="w-6 h-6 text-white fill-white" strokeWidth={2} />
                           </div>
                         </div>
@@ -702,7 +702,7 @@ const Dashboard = () => {
                       <div className="flex items-start gap-5">
                         <div className="relative mt-1">
                           <div className="absolute inset-0 bg-indigo-500 rounded-xl blur-md opacity-40"></div>
-                          <div className="relative p-3 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
+                          <div className="relative p-3 bg-linear-to-br from-indigo-500 to-purple-600 rounded-xl shadow-lg">
                             <Users className="w-6 h-6 text-white" strokeWidth={2} />
                           </div>
                         </div>
@@ -729,7 +729,7 @@ const Dashboard = () => {
                       <div className="flex items-start gap-5">
                         <div className="relative mt-1">
                           <div className="absolute inset-0 bg-pink-500 rounded-xl blur-md opacity-40"></div>
-                          <div className="relative p-3 bg-gradient-to-br from-pink-500 to-rose-600 rounded-xl shadow-lg">
+                          <div className="relative p-3 bg-linear-to-br from-pink-500 to-rose-600 rounded-xl shadow-lg">
                             <Heart className="w-6 h-6 text-white fill-white" strokeWidth={2} />
                           </div>
                         </div>
@@ -764,7 +764,7 @@ const Dashboard = () => {
                       <div className="flex items-start gap-5">
                         <div className="relative mt-1">
                           <div className="absolute inset-0 bg-amber-500 rounded-xl blur-md opacity-40"></div>
-                          <div className="relative p-3 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
+                          <div className="relative p-3 bg-linear-to-br from-amber-500 to-orange-600 rounded-xl shadow-lg">
                             <Flame className="w-6 h-6 text-white" strokeWidth={2} />
                           </div>
                         </div>
@@ -796,7 +796,7 @@ const Dashboard = () => {
                       <div className="flex items-start gap-5">
                         <div className="relative mt-1">
                           <div className="absolute inset-0 bg-cyan-500 rounded-xl blur-md opacity-40"></div>
-                          <div className="relative p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg">
+                          <div className="relative p-3 bg-linear-to-br from-cyan-500 to-blue-600 rounded-xl shadow-lg">
                             <Share2 className="w-6 h-6 text-white" strokeWidth={2} />
                           </div>
                         </div>

@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { Video } from "../models/video.model.js";
 import { User } from "../models/user.model.js";
 import { Like } from "../models/like.model.js";
+import { View } from "../models/view.model.js";
 import { uploadCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
@@ -239,11 +240,8 @@ const getVideoById = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Video not found")
     }
 
-    await Video.findByIdAndUpdate(videoId, {
-        $inc: { views: 1 }
-    })
-
-    let viewerId
+    // Get viewer information
+    let viewerId = null;
     const bearerToken = req.cookies?.accessToken || req.header("authorization")?.replace("Bearer ", "")
     if (bearerToken) {
         try {
@@ -252,12 +250,72 @@ const getVideoById = asyncHandler(async (req, res) => {
         } catch (_) {}
     }
 
+    // Track view - only increment if this is a unique view
+    let viewRecorded = false;
+    
     if (viewerId) {
+        // For logged-in users: track by user ID
+        try {
+            const existingView = await View.findOne({ 
+                video: videoId, 
+                viewer: viewerId 
+            });
+            
+            if (!existingView) {
+                // Create new view record
+                await View.create({
+                    video: videoId,
+                    viewer: viewerId,
+                    ipAddress: req.ip,
+                    userAgent: req.headers['user-agent']
+                });
+                
+                // Increment view count
+                await Video.findByIdAndUpdate(videoId, {
+                    $inc: { views: 1 }
+                });
+                
+                viewRecorded = true;
+            }
+        } catch (error) {
+            console.error("Error recording view:", error);
+        }
+        
+        // Add to watch history
         await User.findByIdAndUpdate(
             viewerId,
             { $addToSet: { watchHistory: video._id } },
             { new: true }
-        )
+        );
+    } else {
+        // For anonymous users: track by IP only (simpler and more reliable)
+        const ipAddress = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+        
+        try {
+            const existingView = await View.findOne({ 
+                video: videoId, 
+                ipAddress: ipAddress,
+                viewer: null // Ensure we're looking for anonymous views
+            });
+            
+            if (!existingView) {
+                // Create new view record
+                await View.create({
+                    video: videoId,
+                    ipAddress: ipAddress,
+                    userAgent: req.headers['user-agent']
+                });
+                
+                // Increment view count
+                await Video.findByIdAndUpdate(videoId, {
+                    $inc: { views: 1 }
+                });
+                
+                viewRecorded = true;
+            }
+        } catch (error) {
+            console.error("Error recording anonymous view:", error);
+        }
     }
 
     const likeCount = await Like.countDocuments({ video: videoId })
