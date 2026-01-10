@@ -74,9 +74,14 @@ const getAllVideos = asyncHandler(async (req, res) => {
         options.sort = { [sortBy]: sortType === "asc" ? 1 : -1 }
     }
 
-    const videos = await Video.aggregatePaginate(Video.aggregate(pipeline), options)
-
-    return res.status(200).json(new ApiResponse(200, videos, "Videos fetched successfully"))
+    try {
+        const aggregate = Video.aggregate(pipeline);
+        const videos = await Video.aggregatePaginate(aggregate, options);
+        return res.status(200).json(new ApiResponse(200, videos, "Videos fetched successfully"));
+    } catch (error) {
+        console.error('Error fetching videos:', error);
+        throw new ApiError(500, error.message || "Failed to fetch videos");
+    }
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {
