@@ -7,8 +7,12 @@ dotenv.config({
     path: "./.env"
 })
 
-// Initialize server with content moderation
-const startServer = async () => {
+// Initialize for Vercel serverless
+let isInitialized = false;
+
+const initializeApp = async () => {
+    if (isInitialized) return;
+    
     try {
         // Connect to database
         await connectDB();
@@ -18,17 +22,38 @@ const startServer = async () => {
         await loadModel();
         console.log('✅ Content moderation ready!');
         
-        // Start server
-        app.listen(process.env.PORT || 3000, () => {
-            console.log(`✅ Server is running at port ${process.env.PORT || 3000}`);
-        });
+        isInitialized = true;
     } catch (error) {
-        console.error("❌ Server startup failed:", error);
-        process.exit(1);
+        console.error("❌ Initialization failed:", error);
+        throw error;
     }
 };
 
-startServer();
+// For Vercel serverless deployment
+if (process.env.VERCEL) {
+    // Initialize once on cold start
+    initializeApp().catch(console.error);
+} else {
+    // For local development, start server normally
+    const startServer = async () => {
+        try {
+            await initializeApp();
+            
+            // Start server
+            app.listen(process.env.PORT || 3000, () => {
+                console.log(`✅ Server is running at port ${process.env.PORT || 3000}`);
+            });
+        } catch (error) {
+            console.error("❌ Server startup failed:", error);
+            process.exit(1);
+        }
+    };
+    
+    startServer();
+}
+
+// Export for Vercel
+export default app;
 
 
 
