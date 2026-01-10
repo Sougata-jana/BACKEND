@@ -9,14 +9,32 @@ const allowedOrigins = (process.env.ORIGIN_CORS || '')
   .map(o => o.trim())
   .filter(Boolean)
 
+console.log('🌐 CORS Configuration:');
+console.log('📋 Allowed Origins:', allowedOrigins);
+
 app.use(cors({
   origin: function (origin, callback) {
+    console.log('🔍 Request from origin:', origin);
+    
     // allow non-browser clients (e.g., curl, Postman) where origin may be undefined
-    if (!origin) return callback(null, true)
-    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
-      return callback(null, true)
+    if (!origin) {
+      console.log('✅ Allowing request (no origin header)');
+      return callback(null, true);
     }
-    return callback(new Error('Not allowed by CORS'))
+    
+    if (allowedOrigins.length === 0) {
+      console.log('⚠️ WARNING: No ORIGIN_CORS configured, allowing all origins');
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      console.log('✅ Origin allowed:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('❌ Origin BLOCKED:', origin);
+    console.log('📋 Allowed origins:', allowedOrigins);
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
 }))
