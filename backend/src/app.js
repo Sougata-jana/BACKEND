@@ -9,6 +9,11 @@ const allowedOrigins = (process.env.ORIGIN_CORS || '')
   .map(o => o.trim())
   .filter(Boolean)
 
+// Add default origins if none specified (for development)
+if (allowedOrigins.length === 0) {
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:3000', 'http://localhost:4173');
+}
+
 console.log('🌐 CORS Configuration:');
 console.log('📋 Allowed Origins:', allowedOrigins);
 
@@ -22,21 +27,25 @@ app.use(cors({
       return callback(null, true);
     }
     
-    if (allowedOrigins.length === 0) {
-      console.log('⚠️ WARNING: No ORIGIN_CORS configured, allowing all origins');
-      return callback(null, true);
-    }
-    
+    // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
       console.log('✅ Origin allowed:', origin);
       return callback(null, true);
     }
     
-    console.log('❌ Origin BLOCKED:', origin);
-    console.log('📋 Allowed origins:', allowedOrigins);
+    // For production, be more lenient with Vercel preview deployments
+    if (origin.includes('vercel.app')) {
+      console.log('✅ Allowing Vercel deployment:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('❌ Origin blocked:', origin);
     return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['set-cookie']
 }))
 
 app.use(express.json({limit: '20kb'}))

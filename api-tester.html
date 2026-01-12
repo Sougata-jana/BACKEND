@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Tester - BuzzTube</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { color: #667eea; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 14px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.3s;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+        }
+        .result h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .status {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 API Tester</h1>
+        <p class="subtitle">Test your BuzzTube backend API connection</p>
+        
+        <div class="input-group">
+            <label for="apiUrl">Backend API URL:</label>
+            <input 
+                type="text" 
+                id="apiUrl" 
+                placeholder="https://your-backend.vercel.app/api/v1"
+                value="https://backend-3mku.vercel.app/api/v1"
+            >
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <button onclick="testHealth()">🏥 Test Health</button>
+            <button onclick="testVideos()">🎬 Test Videos</button>
+            <button onclick="testRoot()">🏠 Test Root</button>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px;">Testing...</p>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+        const loadingDiv = document.getElementById('loading');
+        
+        function showLoading() {
+            loadingDiv.style.display = 'block';
+            resultDiv.innerHTML = '';
+        }
+        
+        function hideLoading() {
+            loadingDiv.style.display = 'none';
+        }
+        
+        function displayResult(title, status, data, error) {
+            hideLoading();
+            
+            const statusClass = error ? 'error' : 'success';
+            const statusText = error ? 'FAILED' : 'SUCCESS';
+            
+            resultDiv.innerHTML = `
+                <div class="result">
+                    <h3>${title}</h3>
+                    <span class="status ${statusClass}">${statusText}</span>
+                    <pre>${JSON.stringify(data || error, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        async function testHealth() {
+            showLoading();
+            const apiUrl = document.getElementById('apiUrl').value.replace('/api/v1', '');
+            
+            try {
+                const response = await fetch(`${apiUrl}/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                displayResult('Health Check', response.status, data);
+            } catch (error) {
+                displayResult('Health Check', null, null, {
+                    error: error.message,
+                    note: 'Cannot connect to backend. Check if URL is correct.'
+                });
+            }
+        }
+        
+        async function testVideos() {
+            showLoading();
+            const apiUrl = document.getElementById('apiUrl').value;
+            
+            try {
+                const response = await fetch(`${apiUrl}/videos?page=1&limit=5`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                displayResult('Videos API', response.status, data);
+            } catch (error) {
+                displayResult('Videos API', null, null, {
+                    error: error.message,
+                    note: 'Check CORS configuration and backend logs.'
+                });
+            }
+        }
+        
+        async function testRoot() {
+            showLoading();
+            const apiUrl = document.getElementById('apiUrl').value.replace('/api/v1', '');
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                displayResult('Root Endpoint', response.status, data);
+            } catch (error) {
+                displayResult('Root Endpoint', null, null, {
+                    error: error.message,
+                    note: 'Backend might not be deployed or URL is incorrect.'
+                });
+            }
+        }
+    </script>
+</body>
+</html>
