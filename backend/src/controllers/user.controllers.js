@@ -149,13 +149,14 @@ const loginUser = asyncHandler(async(req, res)=>{
 
   const option = {
     httpOnly: true,
-    secure:true
+    secure: true,
+    sameSite: 'none'
   }
 
   return res
   .status(200)
-  .cookie("accessToken", accessToken,option)
-  .cookie("refreshToken",refreshToken,option)
+  .cookie("accessToken", accessToken, option)
+  .cookie("refreshToken", refreshToken, option)
   .json(
     new ApiResponse(200,{
       user:logedInUser, accessToken, refreshToken
@@ -179,7 +180,8 @@ const logoutUser  = asyncHandler(async(req, res)=>{
   )
   const option = {
     httpOnly: true,
-    secure:true
+    secure: true,
+    sameSite: 'none'
   }
   return res
   .status(200)
@@ -207,7 +209,8 @@ const refreshAccessToken = asyncHandler(async(req, res)=>{
  
   const option = {
    httpOnly: true,
-   secure: true
+   secure: true,
+   sameSite: 'none'
   }
   const {accessToken, refreshToken: newRefreshToken}=await generatingRefreshAndAccessToken(user._id)
  
@@ -655,7 +658,8 @@ const verifyLoginOTP = asyncHandler(async (req, res) => {
 
   const options = {
     httpOnly: true,
-    secure: true
+    secure: true,
+    sameSite: 'none'
   };
 
   return res
