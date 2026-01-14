@@ -22,7 +22,7 @@ const History = () => {
   const fetchHistory = async () => {
     try {
       setLoading(true)
-      const { data } = await api.get('/user/watch-history')
+      const { data } = await api.get('/users/watch-history')
       setVideos(data.data || [])
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to load history'
