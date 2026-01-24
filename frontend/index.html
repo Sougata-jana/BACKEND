@@ -2,15 +2,122 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='grad' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23dc2626;stop-opacity:1' /%3E%3Cstop offset='50%25' style='stop-color:%23ec4899;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%239333ea;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23grad)'/%3E%3Ctext x='50' y='68' font-family='Arial, sans-serif' font-size='48' font-weight='900' fill='white' text-anchor='middle'%3EBZ%3C/text%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>BuzzTube - Your Video Platform</title>
+    <style>
+      /* Loading screen styles */
+      #app-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out;
+      }
+
+      #app-loader.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .loader-logo {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #dc2626 0%, #ec4899 50%, #9333ea 100%);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        animation: logoFloat 2s ease-in-out infinite;
+      }
+
+      .loader-logo span {
+        color: white;
+        font-size: 32px;
+        font-weight: 900;
+        font-family: 'Poppins', sans-serif;
+      }
+
+      .loader-text {
+        margin-top: 24px;
+        color: white;
+        font-size: 28px;
+        font-weight: 800;
+        font-family: 'Poppins', sans-serif;
+        background: linear-gradient(90deg, #ffffff 0%, #f0f0f0 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+
+      .loader-spinner {
+        margin-top: 20px;
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes logoFloat {
+        0%, 100% {
+          transform: translateY(0px) rotate(0deg);
+        }
+        50% {
+          transform: translateY(-10px) rotate(5deg);
+        }
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Hide body scrollbar during loading */
+      body.loading {
+        overflow: hidden;
+      }
+    </style>
   </head>
-  <body>
+  <body class="loading">
+    <!-- Loading Screen -->
+    <div id="app-loader">
+      <div class="loader-logo">
+        <span>BZ</span>
+      </div>
+      <div class="loader-text">BuzzTube</div>
+      <div class="loader-spinner"></div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    
+    <script>
+      // Hide loader when app is ready
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loader = document.getElementById('app-loader');
+          const body = document.body;
+          if (loader) {
+            loader.classList.add('hide');
+            body.classList.remove('loading');
+            setTimeout(() => loader.remove(), 500);
+          }
+        }, 500);
+      });
+    </script>
   </body>
 </html>

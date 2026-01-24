@@ -12,9 +12,11 @@ const formatViews = (views) => {
 }
 
 const formatDuration = (seconds) => {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const remainingSeconds = seconds % 60
+  // Round to whole seconds to remove decimals
+  const totalSeconds = Math.floor(seconds)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const remainingSeconds = totalSeconds % 60
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`
   }
@@ -75,7 +77,25 @@ const Search = () => {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Search Results</h2>
             <p className="text-gray-600 dark:text-gray-400">
-              {query ? `Showing results for "${query}"` : 'Enter a search term to find videos'}
+              {query ? (
+                <>
+                  {loading ? (
+                    `Searching for "${query}"...`
+                  ) : (
+                    <>
+                      {results.length > 0 ? (
+                        <span className="text-green-600 dark:text-green-400 font-semibold">
+                          ✓ Found {results.length} video{results.length > 1 ? 's' : ''} for "{query}"
+                        </span>
+                      ) : (
+                        `No results for "${query}"`
+                      )}
+                    </>
+                  )}
+                </>
+              ) : (
+                'Enter a search term to find videos'
+              )}
             </p>
           </div>
           {loading && (
@@ -94,13 +114,60 @@ const Search = () => {
         )}
 
         {showEmpty && (
-          <div className="text-center py-16">
-            <div className="w-24 h-24 mx-auto mb-6 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center">
-              <SearchIcon className="w-12 h-12 text-gray-400" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">No results found</h3>
-            <p className="text-gray-600 dark:text-gray-400">Try a different search term.</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-16"
+          >
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", duration: 0.6 }}
+              className="relative w-32 h-32 mx-auto mb-8"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-red-500 to-pink-500 rounded-full blur-2xl opacity-20 animate-pulse" />
+              <div className="relative w-32 h-32 bg-gradient-to-br from-red-100 to-pink-100 dark:from-red-900/30 dark:to-pink-900/30 rounded-full flex items-center justify-center">
+                <SearchIcon className="w-16 h-16 text-red-600 dark:text-red-400" />
+              </div>
+            </motion.div>
+            <motion.h3
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-3"
+            >
+              No Videos Found
+            </motion.h3>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-lg text-gray-600 dark:text-gray-400 mb-2"
+            >
+              We couldn't find any videos matching "<span className="font-semibold text-red-600 dark:text-red-400">{query}</span>"
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-gray-500 dark:text-gray-500"
+            >
+              Try searching with different keywords or check your spelling
+            </motion.p>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="mt-8"
+            >
+              <Link
+                to="/"
+                className="inline-block px-6 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+              >
+                Browse All Videos
+              </Link>
+            </motion.div>
+          </motion.div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '../utils/api';
 import { useAuth } from './AuthContext';
+import toast from 'react-hot-toast';
 
 const NotificationContext = createContext({});
 
@@ -20,15 +21,25 @@ export const NotificationProvider = ({ children }) => {
 
   // Fetch notifications
   const fetchNotifications = async (unreadOnly = false) => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      console.log('NotificationContext: User not authenticated, skipping fetch');
+      return;
+    }
     
     try {
       setLoading(true);
+      console.log('NotificationContext: Fetching notifications...', { unreadOnly });
       const params = unreadOnly ? { unreadOnly: true } : {};
       const response = await api.get('/notifications', { params });
+      console.log('NotificationContext: Notifications fetched:', response.data.data);
       setNotifications(response.data.data.notifications);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('NotificationContext: Error fetching notifications:', error);
+      console.error('NotificationContext: Error response:', error.response?.data);
+      // Only show error toast if it's not a 404 (no notifications)
+      if (error.response?.status !== 404) {
+        toast.error('Failed to load notifications');
+      }
     } finally {
       setLoading(false);
     }
@@ -36,13 +47,19 @@ export const NotificationProvider = ({ children }) => {
 
   // Fetch unread count
   const fetchUnreadCount = async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      console.log('NotificationContext: User not authenticated, skipping unread count fetch');
+      return;
+    }
     
     try {
+      console.log('NotificationContext: Fetching unread count...');
       const response = await api.get('/notifications/unread-count');
+      console.log('NotificationContext: Unread count:', response.data.data.unreadCount);
       setUnreadCount(response.data.data.unreadCount);
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      console.error('NotificationContext: Error fetching unread count:', error);
+      console.error('NotificationContext: Error response:', error.response?.data);
     }
   };
 

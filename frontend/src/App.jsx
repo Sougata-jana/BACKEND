@@ -61,23 +61,65 @@ function App() {
           {/* Toast notifications */}
           <Toaster
             position="top-right"
+            reverseOrder={false}
+            gutter={8}
+            containerClassName=""
+            containerStyle={{}}
             toastOptions={{
+              // Default options
               duration: 4000,
               style: {
-                background: '#1f2937',
-                color: '#f9fafb',
-                border: '1px solid #374151',
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: '#ffffff',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                fontSize: '14px',
+                fontWeight: '500',
+                boxShadow: '0 10px 25px rgba(0, 0, 0, 0.2), 0 6px 12px rgba(0, 0, 0, 0.15)',
+                border: 'none',
+                maxWidth: '400px',
+                backdropFilter: 'blur(10px)',
               },
+              // Success toast
               success: {
+                duration: 3500,
+                style: {
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  color: '#ffffff',
+                },
                 iconTheme: {
                   primary: '#10b981',
-                  secondary: '#f9fafb',
+                  secondary: '#ffffff',
                 },
               },
+              // Error toast
               error: {
+                duration: 4500,
+                style: {
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  color: '#ffffff',
+                },
                 iconTheme: {
                   primary: '#ef4444',
-                  secondary: '#f9fafb',
+                  secondary: '#ffffff',
+                },
+              },
+              // Loading toast
+              loading: {
+                style: {
+                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                  color: '#ffffff',
+                },
+                iconTheme: {
+                  primary: '#3b82f6',
+                  secondary: '#ffffff',
+                },
+              },
+              // Custom toast
+              custom: {
+                style: {
+                  background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+                  color: '#1f2937',
                 },
               },
             }}

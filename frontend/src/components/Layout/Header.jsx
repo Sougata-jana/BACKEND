@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../../contexts/AuthContext'
 import NotificationBell from '../NotificationBell'
+import VoiceSearchModal from '../VoiceSearchModal'
+import toast from 'react-hot-toast'
 import {
   Menu,
   Search,
@@ -27,11 +29,67 @@ const Header = ({ onMenuClick }) => {
   const [showCreateMenu, setShowCreateMenu] = useState(false)
   const [showMobileSearch, setShowMobileSearch] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [showVoiceModal, setShowVoiceModal] = useState(false)
+  const [voiceTranscript, setVoiceTranscript] = useState('')
   const { user, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
   const userMenuRef = useRef(null)
   const createMenuRef = useRef(null)
   const mobileSearchRef = useRef(null)
+  const recognitionRef = useRef(null)
+
+  // Initialize voice recognition
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+      recognitionRef.current = new SpeechRecognition()
+      recognitionRef.current.continuous = false
+      recognitionRef.current.interimResults = false
+      recognitionRef.current.lang = 'en-US'
+
+      recognitionRef.current.onresult = (event) => {
+        const transcript = event.results[0][0].transcript
+        setVoiceTranscript(transcript)
+        setSearchQuery(transcript)
+        setIsListening(false)
+        
+        // Show transcript for a moment
+        setTimeout(() => {
+          toast.success(`Searching for: "${transcript}"`)
+          setShowVoiceModal(false)
+          setVoiceTranscript('')
+          navigate(`/search?q=${encodeURIComponent(transcript.trim())}`)
+        }, 1500)
+      }
+
+      recognitionRef.current.onerror = (event) => {
+        console.error('Speech recognition error:', event.error)
+        setIsListening(false)
+        setShowVoiceModal(false)
+        setVoiceTranscript('')
+        
+        if (event.error === 'not-allowed') {
+          toast.error('Microphone access denied. Please allow microphone permissions.')
+        } else if (event.error === 'no-speech') {
+          toast.error('No speech detected. Please try again.')
+        } else {
+          toast.error('Voice search failed. Please try again.')
+        }
+      }
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false)
+        // Don't close modal immediately, wait for navigation
+      }
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [navigate])
 
   // Close menus when clicking outside
   useEffect(() => {
@@ -56,6 +114,38 @@ const Header = ({ onMenuClick }) => {
     }
   }
 
+  const handleVoiceSearch = () => {
+    if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+      toast.error('Voice search is not supported in your browser. Please use Chrome, Edge, or Safari.')
+      return
+    }
+
+    // Open modal and start listening
+    setShowVoiceModal(true)
+    setVoiceTranscript('')
+    
+    // Small delay to show modal animation before starting recognition
+    setTimeout(() => {
+      try {
+        recognitionRef.current?.start()
+        setIsListening(true)
+      } catch (error) {
+        console.error('Error starting voice recognition:', error)
+        toast.error('Failed to start voice search')
+        setShowVoiceModal(false)
+      }
+    }, 300)
+  }
+
+  const handleCloseVoiceModal = () => {
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+    }
+    setShowVoiceModal(false)
+    setVoiceTranscript('')
+  }
+
   const handleLogout = async () => {
     await logout()
     setShowUserMenu(false)
@@ -70,6 +160,14 @@ const Header = ({ onMenuClick }) => {
 
   return (
     <>
+      {/* Voice Search Modal */}
+      <VoiceSearchModal
+        isOpen={showVoiceModal}
+        isListening={isListening}
+        transcript={voiceTranscript}
+        onClose={handleCloseVoiceModal}
+      />
+
       {/* Mobile Search Overlay */}
       <AnimatePresence>
         {showMobileSearch && (
@@ -100,9 +198,22 @@ const Header = ({ onMenuClick }) => {
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   type="submit"
-                  className="px-4 py-2 bg-red-600 border border-l-0 border-red-600 rounded-r-full hover:bg-red-700 transition-colors"
+                  className="px-4 py-2 bg-red-600 border border-l-0 border-red-600 hover:bg-red-700 transition-colors"
                 >
                   <Search size={20} className="text-white" />
+                </motion.button>
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  type="button"
+                  onClick={handleVoiceSearch}
+                  className={`px-4 py-2 border border-l-0 transition-all duration-200 rounded-r-full ${
+                    isListening 
+                      ? 'bg-red-600 hover:bg-red-700 animate-pulse border-red-600' 
+                      : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600'
+                  }`}
+                  title={isListening ? 'Listening...' : 'Voice search'}
+                >
+                  <Mic size={20} className={isListening ? 'text-white' : 'text-gray-600 dark:text-gray-400'} />
                 </motion.button>
               </form>
             </div>
@@ -189,9 +300,18 @@ const Header = ({ onMenuClick }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="hidden sm:block p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              onClick={handleVoiceSearch}
+              className={`hidden sm:block p-2 rounded-lg transition-all duration-200 ${
+                isListening 
+                  ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+              title={isListening ? 'Listening... Click to stop' : 'Click to search by voice'}
             >
-              <Mic size={20} className="text-gray-600 dark:text-gray-400" />
+              <Mic 
+                size={20} 
+                className={isListening ? 'text-white' : 'text-gray-600 dark:text-gray-400'} 
+              />
             </motion.button>
 
             {/* Notifications */}

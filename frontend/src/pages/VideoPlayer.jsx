@@ -11,8 +11,11 @@ const VideoPlayer = () => {
   const [video, setVideo] = useState(null)
   const [loading, setLoading] = useState(true)
   const [likeBusy, setLikeBusy] = useState(false)
+  const [dislikeBusy, setDislikeBusy] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
+  const [dislikeCount, setDislikeCount] = useState(0)
   const [isLiked, setIsLiked] = useState(false)
+  const [isDisliked, setIsDisliked] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const [editTitle, setEditTitle] = useState('')
@@ -27,6 +30,8 @@ const VideoPlayer = () => {
   const [editingContent, setEditingContent] = useState('')
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [subBusy, setSubBusy] = useState(false)
+  const [notificationsEnabled, setNotificationsEnabled] = useState(false)
+  const [notificationBusy, setNotificationBusy] = useState(false)
   const videoRef = useRef(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(1)
@@ -55,15 +60,18 @@ const VideoPlayer = () => {
     const checkSubscription = async () => {
       if (!video?.owner?._id || !isAuthenticated || !user?._id) {
         setIsSubscribed(false)
+        setNotificationsEnabled(false)
         return
       }
 
       try {
         const response = await api.get(`/subscriptions/status/${video.owner._id}`)
         setIsSubscribed(response.data.data.isSubscribed || false)
+        setNotificationsEnabled(response.data.data.notificationsEnabled || false)
       } catch (err) {
         console.error('Failed to check subscription:', err)
         setIsSubscribed(false)
+        setNotificationsEnabled(false)
       }
     }
 
@@ -77,7 +85,9 @@ const VideoPlayer = () => {
       const videoData = response.data.data
       setVideo(videoData)
       setLikeCount(videoData.likeCount || 0)
+      setDislikeCount(videoData.dislikeCount || 0)
       setIsLiked(videoData.isLiked || false)
+      setIsDisliked(videoData.isDisliked || false)
     } catch (error) {
       console.error('Error fetching video:', error)
       toast.error('Failed to load video')
@@ -411,12 +421,38 @@ const VideoPlayer = () => {
         const { data } = await api.post(`/likes/toggle/v/${video._id}`)
         setIsLiked(data.data.isLiked)
         setLikeCount(data.data.likeCount || 0)
+        // If user liked, remove dislike
+        if (data.data.isLiked) {
+          setIsDisliked(false)
+        }
         toast.success(data.data.isLiked ? 'Liked' : 'Unliked')
       } catch (err) {
         const msg = err.response?.data?.message || 'Failed to toggle like'
         toast.error(msg)
       } finally {
         setLikeBusy(false)
+      }
+    })
+  }
+
+  const onToggleDislike = () => {
+    requireAuth(async () => {
+      if (!video) return
+      try {
+        setDislikeBusy(true)
+        const { data } = await api.post(`/likes/toggle/dislike/v/${video._id}`)
+        setIsDisliked(data.data.isDisliked)
+        setDislikeCount(data.data.dislikeCount || 0)
+        // If user disliked, remove like
+        if (data.data.isDisliked) {
+          setIsLiked(false)
+        }
+        toast.success(data.data.isDisliked ? 'Disliked' : 'Removed dislike')
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Failed to toggle dislike'
+        toast.error(msg)
+      } finally {
+        setDislikeBusy(false)
       }
     })
   }
@@ -431,6 +467,10 @@ const VideoPlayer = () => {
         const newStatus = response.data.data?.isSubscribed
         if (newStatus !== undefined) {
           setIsSubscribed(newStatus)
+          // If unsubscribed, also disable notifications
+          if (!newStatus) {
+            setNotificationsEnabled(false)
+          }
         } else {
           setIsSubscribed((prev) => !prev)
         }
@@ -440,6 +480,26 @@ const VideoPlayer = () => {
         toast.error(msg)
       } finally {
         setSubBusy(false)
+      }
+    })
+  }
+
+  const onToggleNotifications = async () => {
+    if (!video?.owner?._id || !isSubscribed) return
+    requireAuth(async () => {
+      try {
+        setNotificationBusy(true)
+        const response = await api.patch(`/subscriptions/notifications/${video.owner._id}`, {
+          notificationsEnabled: !notificationsEnabled
+        })
+        const newStatus = response.data.data?.notificationsEnabled
+        setNotificationsEnabled(newStatus)
+        toast.success(newStatus ? 'Notifications enabled' : 'Notifications disabled')
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Failed to toggle notifications'
+        toast.error(msg)
+      } finally {
+        setNotificationBusy(false)
       }
     })
   }
@@ -531,8 +591,10 @@ const VideoPlayer = () => {
   }
 
   const formatDuration = (seconds) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
+    // Round to whole seconds to remove decimals
+    const totalSeconds = Math.floor(seconds)
+    const mins = Math.floor(totalSeconds / 60)
+    const secs = totalSeconds % 60
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
@@ -961,19 +1023,20 @@ const VideoPlayer = () => {
                 whileTap={{ scale: likeBusy ? 1 : 0.97 }}
                 disabled={likeBusy}
                 onClick={onToggleLike}
-                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm ${isLiked ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all duration-200 ${isLiked ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
               >
-                <ThumbsUp size={18} />
+                <ThumbsUp size={18} className={isLiked ? 'fill-current' : ''} />
                 {likeCount.toLocaleString()}
               </motion.button>
               <motion.button
-                whileHover={{ scale: likeBusy ? 1 : 1.03 }}
-                whileTap={{ scale: likeBusy ? 1 : 0.97 }}
-                disabled={likeBusy}
-                onClick={() => toast.info('Dislike feature coming soon')}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700"
+                whileHover={{ scale: dislikeBusy ? 1 : 1.03 }}
+                whileTap={{ scale: dislikeBusy ? 1 : 0.97 }}
+                disabled={dislikeBusy}
+                onClick={onToggleDislike}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all duration-200 ${isDisliked ? 'bg-gray-700 text-white hover:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
               >
-                <ThumbsDown size={18} />
+                <ThumbsDown size={18} className={isDisliked ? 'fill-current' : ''} />
+                {dislikeCount > 0 ? dislikeCount.toLocaleString() : ''}
               </motion.button>
             </div>
           </div>
@@ -1026,11 +1089,20 @@ const VideoPlayer = () => {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => toast.info('Notifications are enabled for this channel')}
-                        className="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                        title="Notifications"
+                        onClick={onToggleNotifications}
+                        disabled={notificationBusy}
+                        className={`p-2 rounded-full transition-all duration-200 ${
+                          notificationsEnabled 
+                            ? 'bg-red-600 text-white hover:bg-red-700' 
+                            : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600'
+                        }`}
+                        title={notificationsEnabled ? 'Notifications enabled' : 'Enable notifications'}
                       >
-                        <Bell size={20} className="text-gray-900 dark:text-gray-100" />
+                        {notificationsEnabled ? (
+                          <Bell size={20} className="fill-current" />
+                        ) : (
+                          <BellOff size={20} />
+                        )}
                       </motion.button>
                     )}
                   </>
