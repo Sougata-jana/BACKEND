@@ -11,7 +11,8 @@ import {
   TrendingUp,
   Calendar,
   Play,
-  Clock
+  Clock,
+  ThumbsDown
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { Link } from 'react-router-dom'
@@ -195,6 +196,28 @@ const Dashboard = () => {
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Likes</p>
             <p className="text-xs text-green-600 dark:text-green-400">
               +{stats?.recentLikes || 0} in last {period} days
+            </p>
+          </motion.div>
+
+          {/* Total Dislikes */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.35 }}
+            className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
+                <ThumbsDown className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
+              </div>
+              <TrendingUp className="w-5 h-5 text-green-500" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-1">
+              {formatViews(stats?.totalDislikes || 0)}
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Total Dislikes</p>
+            <p className="text-xs text-green-600 dark:text-green-400">
+              +{stats?.recentDislikes || 0} in last {period} days
             </p>
           </motion.div>
 

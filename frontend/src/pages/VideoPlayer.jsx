@@ -419,11 +419,12 @@ const VideoPlayer = () => {
       try {
         setLikeBusy(true)
         const { data } = await api.post(`/likes/toggle/v/${video._id}`)
-        setIsLiked(data.data.isLiked)
+        // Always update all states from backend
+        setIsLiked(data.data.isLiked || false)
         setLikeCount(data.data.likeCount || 0)
-        // If user liked, remove dislike
-        if (data.data.isLiked) {
-          setIsDisliked(false)
+        setIsDisliked(data.data.isDisliked || false)
+        if (data.data.dislikeCount !== undefined) {
+          setDislikeCount(data.data.dislikeCount)
         }
         toast.success(data.data.isLiked ? 'Liked' : 'Unliked')
       } catch (err) {
@@ -441,11 +442,12 @@ const VideoPlayer = () => {
       try {
         setDislikeBusy(true)
         const { data } = await api.post(`/likes/toggle/dislike/v/${video._id}`)
-        setIsDisliked(data.data.isDisliked)
+        // Always update all states from backend
+        setIsDisliked(data.data.isDisliked || false)
         setDislikeCount(data.data.dislikeCount || 0)
-        // If user disliked, remove like
-        if (data.data.isDisliked) {
-          setIsLiked(false)
+        setIsLiked(data.data.isLiked || false)
+        if (data.data.likeCount !== undefined) {
+          setLikeCount(data.data.likeCount)
         }
         toast.success(data.data.isDisliked ? 'Disliked' : 'Removed dislike')
       } catch (err) {
@@ -1036,7 +1038,6 @@ const VideoPlayer = () => {
                 className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm transition-all duration-200 ${isDisliked ? 'bg-gray-700 text-white hover:bg-gray-800' : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
               >
                 <ThumbsDown size={18} className={isDisliked ? 'fill-current' : ''} />
-                {dislikeCount > 0 ? dislikeCount.toLocaleString() : ''}
               </motion.button>
             </div>
           </div>

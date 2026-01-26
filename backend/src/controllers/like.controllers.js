@@ -45,8 +45,15 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
     }
 
     const likeCount = await Like.countDocuments({ video: videoId, isLike: true })
+    const dislikeCount = await Like.countDocuments({ video: videoId, isLike: false })
 
-    return res.status(200).json(new ApiResponse(200, { like, likeCount, isLiked: !!like }, `Video ${like ? "liked" : "unliked"} successfully`))
+    return res.status(200).json(new ApiResponse(200, { 
+        like, 
+        likeCount, 
+        dislikeCount,
+        isLiked: !!like,
+        isDisliked: false
+    }, `Video ${like ? "liked" : "unliked"} successfully`))
 })
 
 const toggleVideoDislike = asyncHandler(async (req, res) => {
@@ -87,8 +94,15 @@ const toggleVideoDislike = asyncHandler(async (req, res) => {
     }
 
     const dislikeCount = await Like.countDocuments({ video: videoId, isLike: false })
+    const likeCount = await Like.countDocuments({ video: videoId, isLike: true })
 
-    return res.status(200).json(new ApiResponse(200, { dislike, dislikeCount, isDisliked: !!dislike }, `Video ${dislike ? "disliked" : "undisliked"} successfully`))
+    return res.status(200).json(new ApiResponse(200, { 
+        dislike, 
+        dislikeCount, 
+        likeCount,
+        isDisliked: !!dislike,
+        isLiked: false
+    }, `Video ${dislike ? "disliked" : "undisliked"} successfully`))
 })
 
 const toggleCommentLike = asyncHandler(async (req, res) => {
